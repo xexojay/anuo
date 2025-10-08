@@ -1,11 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { search } from "@/lib/search";
+import { chatWithText, chatWithTextAndImages } from "@/lib/ai/tuzi";
 
 export const runtime = "edge";
 
 export async function POST(req: NextRequest) {
   try {
-    const { message } = await req.json();
+    const { message, images } = await req.json();
+
+    // 如果有图片，使用AI处理图片+文字
+    if (images && images.length > 0) {
+      const aiResponse = await chatWithTextAndImages(message, images);
+
+      return NextResponse.json({
+        intent: "ai_vision",
+        results: [
+          {
+            type: "note",
+            content: aiResponse,
+          },
+        ],
+        message: aiResponse,
+      });
+    }
 
     // 简单的意图识别
     const intent = detectIntent(message);
@@ -21,6 +38,15 @@ export async function POST(req: NextRequest) {
         {
           type: "note",
           content: message,
+        },
+      ];
+    } else {
+      // 默认使用AI对话
+      const aiResponse = await chatWithText(message);
+      results = [
+        {
+          type: "note",
+          content: aiResponse,
         },
       ];
     }
