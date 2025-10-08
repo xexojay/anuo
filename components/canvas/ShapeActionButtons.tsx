@@ -11,27 +11,37 @@ import { useState } from "react";
 export default function ShapeActionButtons() {
   const editor = useEditor();
 
-  // 订阅选中的shapes
-  const selectedShapes = useValue("selected shapes", () => {
+  // 订阅选中的shapes和相机状态，以便按钮跟随卡片移动
+  const shapeData = useValue("shape with screen position", () => {
+    // 订阅相机状态，这样移动/缩放画布时会重新计算
+    editor.getCamera();
+
     const ids = editor.getSelectedShapeIds();
-    return ids.map((id) => editor.getShape(id));
+    if (ids.length !== 1) return null;
+
+    const shape = editor.getShape(ids[0]);
+    if (!shape || shape.type !== "conversation-card") return null;
+
+    const bounds = editor.getShapePageBounds(shape.id);
+    if (!bounds) return null;
+
+    // 计算屏幕坐标
+    const topLeft = editor.pageToScreen({ x: bounds.x, y: bounds.y });
+    const topRight = editor.pageToScreen({ x: bounds.x + bounds.w, y: bounds.y });
+
+    return {
+      shape: shape as ConversationCardShape,
+      topLeft,
+      topRight,
+    };
   }, [editor]);
 
-  // 只处理单个选中的ConversationCard
-  if (selectedShapes.length !== 1) return null;
+  // 如果没有选中合适的shape，不显示按钮
+  if (!shapeData) return null;
 
-  const shape = selectedShapes[0];
-  if (!shape || shape.type !== "conversation-card") return null;
-
+  const { shape, topLeft, topRight } = shapeData;
   const conversationShape = shape as ConversationCardShape;
   const { themeColor, showColorPicker, userMessage } = conversationShape.props;
-
-  // 获取shape的屏幕坐标
-  const bounds = editor.getShapePageBounds(shape.id);
-  if (!bounds) return null;
-
-  const topLeft = editor.pageToScreen({ x: bounds.x, y: bounds.y });
-  const topRight = editor.pageToScreen({ x: bounds.x + bounds.w, y: bounds.y });
 
   // 预置颜色
   const colors = [
@@ -135,14 +145,34 @@ export default function ShapeActionButtons() {
     }
   };
 
+  const handleResetSize = () => {
+    console.log("Reset to base size");
+    // 获取 ShapeUtil 实例来访问 contentHeightCache
+    const util = editor.getShapeUtil(shape);
+    const contentHeight = (util as any).getContentHeight?.(shape.id) || 400;
+
+    editor.updateShapes([
+      {
+        id: shape.id,
+        type: "conversation-card",
+        props: {
+          ...conversationShape.props,
+          w: 700, // 默认宽度
+          h: contentHeight, // 内容所需高度
+        },
+      },
+    ]);
+  };
+
   return (
     <>
       {/* 顶部左侧按钮 */}
       <div
-        className="absolute flex items-center gap-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 px-1 py-1 z-50"
+        className="absolute flex items-center gap-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 px-1 py-1 z-[9999]"
         style={{
           left: `${topLeft.x}px`,
           top: `${topLeft.y - 48}px`,
+          pointerEvents: 'auto',
         }}
       >
         {/* 主题按钮 */}
@@ -164,7 +194,10 @@ export default function ShapeActionButtons() {
 
           {/* 颜色选择器 */}
           {showColorPicker && (
-            <div className="absolute top-full left-0 mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-2 flex gap-1">
+            <div
+              className="absolute top-full left-0 mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-2 flex gap-1"
+              style={{ pointerEvents: 'auto' }}
+            >
               {colors.map((color) => (
                 <button
                   key={color.value}
@@ -179,6 +212,25 @@ export default function ShapeActionButtons() {
               ))}
             </div>
           )}
+        </div>
+
+        {/* 重置大小按钮 */}
+        <div className="relative group">
+          <button
+            onClick={handleResetSize}
+            className="w-8 h-8 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-center text-gray-600 dark:text-gray-400"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 7v6h6"></path>
+              <path d="M21 17v-6h-6"></path>
+              <path d="M21 7a9 9 0 0 0-9-9 9 9 0 0 0-9 9m0 10a9 9 0 0 0 9 9 9 9 0 0 0 9-9"></path>
+            </svg>
+          </button>
+
+          {/* Tooltip */}
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap">
+            重置大小
+          </div>
         </div>
 
         {/* 删除按钮 */}
@@ -202,10 +254,11 @@ export default function ShapeActionButtons() {
 
       {/* 右侧顶部重新生成按钮 */}
       <div
-        className="absolute bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-1 z-50 group"
+        className="absolute bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-1 z-[9999] group"
         style={{
           left: `${topRight.x + 8}px`,
           top: `${topRight.y}px`,
+          pointerEvents: 'auto',
         }}
       >
         <button

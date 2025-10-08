@@ -131,3 +131,12 @@ body {
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.32), 0 4px 12px rgba(0, 0, 0, 0.16) !important;
   }
 }
+
+/* tldraw 选择框圆角 - 匹配卡片样式 */
+.tl-selection__bg,
+.tl-selection-background,
+[data-testid="selection-background"] {
+  border-radius: 1rem !important; /* 匹配 rounded-2xl */
+  rx: 16 !important; /* SVG 圆角半径 */
+  ry: 16 !important; /* SVG 圆角半径 */
+}
