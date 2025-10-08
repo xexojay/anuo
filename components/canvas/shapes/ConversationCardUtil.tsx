@@ -34,6 +34,9 @@ export class ConversationCardUtil extends ShapeUtil<ConversationCardShape> {
     const { w, h, userMessage, aiResponse, isLoading, themeColor } = shape.props;
     const editor = useEditor();
 
+    // 检查是否选中
+    const isSelected = editor.getSelectedShapeIds().includes(shape.id);
+
     // 预置颜色
     const colors = [
       { name: "白色", value: "white", border: "#e5e7eb", bg: "#ffffff" },
@@ -128,19 +131,22 @@ export class ConversationCardUtil extends ShapeUtil<ConversationCardShape> {
           pointerEvents: "all",
         }}
       >
-        <div
-          className="w-full h-full rounded-2xl border-3 bg-white dark:bg-gray-800 overflow-hidden flex flex-col shadow-lg hover:shadow-xl transition-shadow"
-          style={{ borderColor: currentColor.border, borderWidth: "3px" }}
-        >
-          {/* 顶部按钮栏 */}
-          <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
-            {/* 左侧按钮 */}
-            <div className="flex items-center gap-2">
+        {/* 外部按钮 - 只在选中时显示 */}
+        {isSelected && (
+          <>
+            {/* 顶部左上方按钮 */}
+            <div
+              className="absolute -top-12 left-0 flex items-center gap-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 px-2 py-1"
+              style={{ pointerEvents: "all" }}
+            >
               {/* 主题按钮 */}
               <div className="relative">
                 <button
-                  onClick={() => setShowColorPicker(!showColorPicker)}
-                  className="px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowColorPicker(!showColorPicker);
+                  }}
+                  className="px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-1 text-xs text-gray-700 dark:text-gray-300"
                   title="主题"
                 >
                   <div
@@ -156,11 +162,12 @@ export class ConversationCardUtil extends ShapeUtil<ConversationCardShape> {
                     {colors.map((color) => (
                       <button
                         key={color.value}
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           handleColorChange(color.value);
                           setShowColorPicker(false);
                         }}
-                        className="w-8 h-8 rounded-full border-2 hover:scale-110 transition-transform"
+                        className="w-6 h-6 rounded-full border-2 hover:scale-110 transition-transform"
                         style={{
                           backgroundColor: color.bg,
                           borderColor: color.border,
@@ -174,11 +181,14 @@ export class ConversationCardUtil extends ShapeUtil<ConversationCardShape> {
 
               {/* 删除按钮 */}
               <button
-                onClick={handleDelete}
-                className="px-3 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete();
+                }}
+                className="px-2 py-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-1 text-xs text-gray-700 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400"
                 title="删除"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="3 6 5 6 21 6"></polyline>
                   <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                 </svg>
@@ -186,51 +196,61 @@ export class ConversationCardUtil extends ShapeUtil<ConversationCardShape> {
               </button>
             </div>
 
-            {/* 右侧重新生成按钮 */}
-            <button
-              onClick={handleRegenerate}
-              disabled={isLoading}
-              className="px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300 disabled:opacity-50"
-              title="重新生成"
+            {/* 右侧中间重新生成按钮 */}
+            <div
+              className="absolute top-1/2 -translate-y-1/2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-1"
+              style={{ left: `${w + 8}px`, pointerEvents: "all" }}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isLoading ? "animate-spin" : ""}>
-                <polyline points="23 4 23 10 17 10"></polyline>
-                <polyline points="1 20 1 14 7 14"></polyline>
-                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-              </svg>
-              <span>重新生成</span>
-            </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRegenerate();
+                }}
+                disabled={isLoading}
+                className="w-8 h-8 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-center text-gray-700 dark:text-gray-300 disabled:opacity-50"
+                title="重新生成"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isLoading ? "animate-spin" : ""}>
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <polyline points="1 20 1 14 7 14"></polyline>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* 卡片主体 - 简洁设计 */}
+        <div
+          className="w-full h-full rounded-2xl bg-white dark:bg-gray-800 overflow-hidden flex flex-col shadow-lg transition-shadow"
+          style={{ borderColor: currentColor.border, borderWidth: "3px", borderStyle: "solid" }}
+        >
+          {/* 用户提问 */}
+          <div className="px-6 py-4">
+            <p className="text-base font-medium text-gray-900 dark:text-gray-100 whitespace-pre-wrap break-words">
+              {userMessage || "用户提问"}
+            </p>
           </div>
 
-          {/* 内容区域 */}
-          <div className="flex-1 flex flex-col overflow-hidden">
-            {/* 用户提问 */}
-            <div className="px-6 py-4">
-              <p className="text-base font-medium text-gray-900 dark:text-gray-100 whitespace-pre-wrap break-words">
-                {userMessage || "用户提问"}
+          {/* 分隔线 */}
+          <div className="px-6">
+            <div className="border-t border-gray-200 dark:border-gray-700"></div>
+          </div>
+
+          {/* AI回答 */}
+          <div className="flex-1 overflow-auto px-6 py-4">
+            {isLoading ? (
+              <div className="flex items-center gap-2 text-gray-500">
+                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10" strokeDasharray="60" strokeDashoffset="30"></circle>
+                </svg>
+                <span>生成中...</span>
+              </div>
+            ) : (
+              <p className="text-base text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words leading-relaxed">
+                {aiResponse || "等待AI回复..."}
               </p>
-            </div>
-
-            {/* 分隔线 */}
-            <div className="px-6">
-              <div className="border-t border-gray-200 dark:border-gray-700"></div>
-            </div>
-
-            {/* AI回答 */}
-            <div className="flex-1 overflow-auto px-6 py-4">
-              {isLoading ? (
-                <div className="flex items-center gap-2 text-gray-500">
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <circle cx="12" cy="12" r="10" strokeDasharray="60" strokeDashoffset="30"></circle>
-                  </svg>
-                  <span>生成中...</span>
-                </div>
-              ) : (
-                <p className="text-base text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words leading-relaxed">
-                  {aiResponse || "等待AI回复..."}
-                </p>
-              )}
-            </div>
+            )}
           </div>
         </div>
       </HTMLContainer>
