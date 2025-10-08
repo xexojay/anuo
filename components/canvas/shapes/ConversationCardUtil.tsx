@@ -155,6 +155,4 @@ export class ConversationCardUtil extends ShapeUtil<ConversationCardShape> {
   indicator(shape: ConversationCardShape) {
     return <rect width={shape.props.w} height={shape.props.h} />;
   }
-
-  override canResize = () => true;
 }
