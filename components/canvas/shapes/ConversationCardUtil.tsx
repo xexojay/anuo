@@ -160,23 +160,27 @@ export class ConversationCardUtil extends ShapeUtil<ConversationCardShape> {
       }
     };
 
+    // 按钮高度
+    const buttonHeight = 48;
+    const buttonWidth = 48;
+
     return (
       <HTMLContainer
         style={{
-          width: w,
-          height: h,
+          width: w + buttonWidth,
+          height: h + buttonHeight,
           pointerEvents: "all",
         }}
       >
-        {/* 外部按钮 - 只在选中时显示 */}
-        {isSelected && (
-          <>
-            {/* 顶部左上方按钮 */}
-            <div
-              className="absolute -top-12 left-0 flex items-center gap-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 px-1 py-1"
-              style={{ pointerEvents: "all" }}
-              onClick={(e) => e.stopPropagation()}
-            >
+        <div className="relative w-full h-full">
+          {/* 外部按钮 - 只在选中时显示 */}
+          {isSelected && (
+            <>
+              {/* 顶部左上方按钮 */}
+              <div
+                className="absolute top-0 left-0 flex items-center gap-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 px-1 py-1"
+                onClick={(e) => e.stopPropagation()}
+              >
               {/* 主题按钮 */}
               <div className="relative group">
                 <button
@@ -247,68 +251,76 @@ export class ConversationCardUtil extends ShapeUtil<ConversationCardShape> {
               </div>
             </div>
 
-            {/* 右侧顶部重新生成按钮 */}
-            <div
-              className="absolute top-0 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-1 group"
-              style={{ left: `${w + 8}px`, pointerEvents: "all" }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleRegenerate();
-                }}
-                onMouseDown={(e) => e.stopPropagation()}
-                disabled={isLoading}
-                className="w-8 h-8 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-center text-gray-600 dark:text-gray-400 disabled:opacity-50"
-                title="重新生成"
+              {/* 右侧顶部重新生成按钮 */}
+              <div
+                className="absolute top-0 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-1 group"
+                style={{ left: w }}
+                onClick={(e) => e.stopPropagation()}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isLoading ? "animate-spin" : ""}>
-                  <polyline points="23 4 23 10 17 10"></polyline>
-                  <polyline points="1 20 1 14 7 14"></polyline>
-                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-                </svg>
-              </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRegenerate();
+                  }}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  disabled={isLoading}
+                  className="w-8 h-8 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-center text-gray-600 dark:text-gray-400 disabled:opacity-50"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isLoading ? "animate-spin" : ""}>
+                    <polyline points="23 4 23 10 17 10"></polyline>
+                    <polyline points="1 20 1 14 7 14"></polyline>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                  </svg>
+                </button>
 
-              {/* Tooltip */}
-              <div className="absolute top-1/2 -translate-y-1/2 left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap">
-                重新生成
+                {/* Tooltip */}
+                <div className="absolute top-1/2 -translate-y-1/2 left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap">
+                  重新生成
+                </div>
               </div>
-            </div>
-          </>
-        )}
+            </>
+          )}
 
-        {/* 卡片主体 - 简洁设计 */}
-        <div
-          className="w-full h-full rounded-2xl bg-white dark:bg-gray-800 overflow-hidden flex flex-col shadow-lg transition-shadow"
-          style={{ borderColor: currentColor.border, borderWidth: "3px", borderStyle: "solid" }}
-        >
-          {/* 用户提问 */}
-          <div className="px-6 py-4">
-            <p className="text-base font-medium text-gray-900 dark:text-gray-100 whitespace-pre-wrap break-words">
-              {userMessage || "用户提问"}
-            </p>
-          </div>
-
-          {/* 分隔线 */}
-          <div className="px-6">
-            <div className="border-t border-gray-200 dark:border-gray-700"></div>
-          </div>
-
-          {/* AI回答 */}
-          <div className="flex-1 overflow-auto px-6 py-4">
-            {isLoading ? (
-              <div className="flex items-center gap-2 text-gray-500">
-                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10" strokeDasharray="60" strokeDashoffset="30"></circle>
-                </svg>
-                <span>生成中...</span>
-              </div>
-            ) : (
-              <p className="text-base text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words leading-relaxed">
-                {aiResponse || "等待AI回复..."}
+          {/* 卡片主体 - 简洁设计 */}
+          <div
+            className="absolute rounded-2xl bg-white dark:bg-gray-800 overflow-hidden flex flex-col shadow-lg transition-shadow"
+            style={{
+              top: buttonHeight,
+              left: 0,
+              width: w,
+              height: h,
+              borderColor: currentColor.border,
+              borderWidth: "3px",
+              borderStyle: "solid",
+            }}
+          >
+            {/* 用户提问 */}
+            <div className="px-6 py-4">
+              <p className="text-base font-medium text-gray-900 dark:text-gray-100 whitespace-pre-wrap break-words">
+                {userMessage || "用户提问"}
               </p>
-            )}
+            </div>
+
+            {/* 分隔线 */}
+            <div className="px-6">
+              <div className="border-t border-gray-200 dark:border-gray-700"></div>
+            </div>
+
+            {/* AI回答 */}
+            <div className="flex-1 overflow-auto px-6 py-4">
+              {isLoading ? (
+                <div className="flex items-center gap-2 text-gray-500">
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10" strokeDasharray="60" strokeDashoffset="30"></circle>
+                  </svg>
+                  <span>生成中...</span>
+                </div>
+              ) : (
+                <p className="text-base text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words leading-relaxed">
+                  {aiResponse || "等待AI回复..."}
+                </p>
+              )}
+            </div>
           </div>
         </div>
       </HTMLContainer>
