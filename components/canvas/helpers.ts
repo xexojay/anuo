@@ -1,5 +1,6 @@
 import { Editor, createShapeId } from "tldraw";
 import type {
+  ConversationCardShape,
   SearchResultCardShape,
   NoteCardShape,
   ClusterCardShape,
@@ -100,8 +101,58 @@ export function createClusterCard(
   return id;
 }
 
+// 创建对话卡片
+export function createConversationCard(
+  editor: Editor,
+  data: {
+    userMessage: string;
+    aiResponse?: string;
+    isLoading?: boolean;
+    x?: number;
+    y?: number;
+  }
+) {
+  const id = createShapeId();
+  editor.createShapes([
+    {
+      id,
+      type: "conversation-card",
+      x: data.x ?? 100,
+      y: data.y ?? 100,
+      props: {
+        w: 600,
+        h: 400,
+        userMessage: data.userMessage,
+        aiResponse: data.aiResponse || "",
+        isLoading: data.isLoading ?? true,
+        timestamp: Date.now(),
+      },
+    },
+  ]);
+  return id;
+}
+
+// 更新对话卡片的AI回复
+export function updateConversationCard(
+  editor: Editor,
+  cardId: string,
+  aiResponse: string,
+  isLoading: boolean = false
+) {
+  editor.updateShape({
+    id: cardId as any,
+    type: "conversation-card",
+    props: {
+      aiResponse,
+      isLoading,
+    },
+  });
+}
+
 // 导出所有helpers
 export const cardHelpers = {
+  createConversationCard,
+  updateConversationCard,
   createSearchResultCard,
   createNoteCard,
   createClusterCard,

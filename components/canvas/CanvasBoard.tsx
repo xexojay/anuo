@@ -3,6 +3,7 @@
 import { Tldraw } from "tldraw";
 import "tldraw/tldraw.css";
 import {
+  ConversationCardUtil,
   SearchResultCardUtil,
   NoteCardUtil,
   ClusterCardUtil,
@@ -12,6 +13,7 @@ import { useParams } from "next/navigation";
 
 // 自定义shapes数组（在组件外定义，避免重渲染）
 const customShapeUtils = [
+  ConversationCardUtil,
   SearchResultCardUtil,
   NoteCardUtil,
   ClusterCardUtil,

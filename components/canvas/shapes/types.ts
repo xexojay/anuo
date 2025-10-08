@@ -1,5 +1,18 @@
 import { TLBaseShape, TLDefaultColorStyle } from "tldraw";
 
+// 对话卡片类型（新）
+export type ConversationCardShape = TLBaseShape<
+  "conversation-card",
+  {
+    w: number;
+    h: number;
+    userMessage: string;
+    aiResponse: string;
+    isLoading: boolean;
+    timestamp: number;
+  }
+>;
+
 // 搜索结果卡片类型
 export type SearchResultCardShape = TLBaseShape<
   "search-result-card",
@@ -42,6 +55,7 @@ export type ClusterCardShape = TLBaseShape<
 
 // 所有自定义卡片类型的联合类型
 export type CustomShape =
+  | ConversationCardShape
   | SearchResultCardShape
   | NoteCardShape
   | ClusterCardShape;

@@ -37,8 +37,24 @@ export default function ChatBar() {
     e.preventDefault();
     if (!input.trim() || isLoading || !editor) return;
 
+    const userMessage = input;
+    const userImages = images;
+
     setIsLoading(true);
     setMessage("");
+    setInput("");
+    setImages([]);
+
+    // 立即创建对话卡片（显示"生成中..."）
+    const cardId = cardHelpers.createConversationCard(editor, {
+      userMessage,
+      isLoading: true,
+      x: 100,
+      y: 100,
+    });
+
+    // 自动缩放到卡片
+    editor.zoomToSelection({ animation: { duration: 400 } });
 
     try {
       // 调用AI API
@@ -46,31 +62,24 @@ export default function ChatBar() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: input,
-          images: images.length > 0 ? images : undefined,
+          message: userMessage,
+          images: userImages.length > 0 ? userImages : undefined,
         }),
       });
 
       const data = await response.json();
 
-      // 显示AI响应
-      setMessage(data.message);
+      // 处理搜索结果（如果是搜索）
+      if (data.intent === "search" && data.results && data.results.length > 0) {
+        // 先删除对话卡片
+        editor.deleteShape(cardId as any);
 
-      // 创建卡片
-      if (data.results && data.results.length > 0) {
+        // 创建搜索结果卡片
         let x = 100;
         let y = 100;
 
         data.results.forEach((result: any, index: number) => {
-          if (result.type === "note") {
-            // 创建笔记卡片
-            cardHelpers.createNoteCard(editor, {
-              content: result.content,
-              x: x + index * 340,
-              y,
-            });
-          } else if (result.title && result.snippet) {
-            // 创建搜索结果卡片
+          if (result.title && result.snippet) {
             cardHelpers.createSearchResultCard(editor, {
               title: result.title,
               snippet: result.snippet,
@@ -82,15 +91,24 @@ export default function ChatBar() {
           }
         });
 
-        // 自动缩放到查看所有卡片
         editor.zoomToFit({ animation: { duration: 400 } });
+      } else {
+        // AI对话或图片识别 - 更新对话卡片
+        const aiResponse = data.results?.[0]?.content || data.message || "无响应";
+        cardHelpers.updateConversationCard(editor, cardId, aiResponse, false);
       }
 
-      setInput("");
-      setImages([]); // 清空图片
+      setMessage(data.message);
     } catch (error) {
       console.error("Error:", error);
       setMessage("发生错误，请重试");
+      // 更新卡片显示错误
+      cardHelpers.updateConversationCard(
+        editor,
+        cardId,
+        "抱歉，发生了错误，请重试。",
+        false
+      );
     } finally {
       setIsLoading(false);
     }
