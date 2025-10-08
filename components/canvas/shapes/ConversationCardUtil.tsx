@@ -31,9 +31,9 @@ export class ConversationCardUtil extends ShapeUtil<ConversationCardShape> {
     return { w: 500, h: 100 };
   }
 
-  // 只允许调整宽度，高度自动
+  // 允许调整大小
   override canResize() {
-    return "x"; // 只允许水平调整
+    return true;
   }
 
   // 处理调整大小 - 只应用宽度变化，限制最小宽度
