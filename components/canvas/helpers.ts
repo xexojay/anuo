@@ -127,6 +127,7 @@ export function createConversationCard(
         isLoading: data.isLoading ?? true,
         timestamp: Date.now(),
         themeColor: "blue",
+        showColorPicker: false,
       },
     },
   ]);

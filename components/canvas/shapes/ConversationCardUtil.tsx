@@ -20,6 +20,7 @@ export class ConversationCardUtil extends ShapeUtil<ConversationCardShape> {
       isLoading: false,
       timestamp: Date.now(),
       themeColor: "blue",
+      showColorPicker: false,
     };
   }
 
@@ -32,7 +33,7 @@ export class ConversationCardUtil extends ShapeUtil<ConversationCardShape> {
   }
 
   component(shape: ConversationCardShape) {
-    const { w, h, userMessage, aiResponse, isLoading, themeColor } = shape.props;
+    const { w, h, userMessage, aiResponse, isLoading, themeColor, showColorPicker } = shape.props;
     const editor = useEditor();
 
     // 使用 useValue 订阅选中状态，避免重渲染问题
@@ -57,6 +58,19 @@ export class ConversationCardUtil extends ShapeUtil<ConversationCardShape> {
 
     const currentColor = colors.find((c) => c.value === themeColor) || colors.find((c) => c.value === "blue")!;
 
+    const toggleColorPicker = () => {
+      editor.updateShapes([
+        {
+          id: shape.id,
+          type: "conversation-card",
+          props: {
+            ...shape.props,
+            showColorPicker: !showColorPicker,
+          },
+        },
+      ]);
+    };
+
     const handleColorChange = (color: string) => {
       editor.updateShapes([
         {
@@ -65,6 +79,7 @@ export class ConversationCardUtil extends ShapeUtil<ConversationCardShape> {
           props: {
             ...shape.props,
             themeColor: color,
+            showColorPicker: false,
           },
         },
       ]);
@@ -126,8 +141,6 @@ export class ConversationCardUtil extends ShapeUtil<ConversationCardShape> {
       }
     };
 
-    const [showColorPicker, setShowColorPicker] = useState(false);
-
     return (
       <HTMLContainer
         style={{
@@ -150,11 +163,10 @@ export class ConversationCardUtil extends ShapeUtil<ConversationCardShape> {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    setShowColorPicker(!showColorPicker);
+                    toggleColorPicker();
                   }}
                   onMouseDown={(e) => e.stopPropagation()}
                   className="w-8 h-8 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-center"
-                  title="主题"
                 >
                   <div
                     className="w-5 h-5 rounded-full border-2"
@@ -163,7 +175,7 @@ export class ConversationCardUtil extends ShapeUtil<ConversationCardShape> {
                 </button>
 
                 {/* Tooltip */}
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap">
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-[101]">
                   主题
                 </div>
 
@@ -176,7 +188,6 @@ export class ConversationCardUtil extends ShapeUtil<ConversationCardShape> {
                         onClick={(e) => {
                           e.stopPropagation();
                           handleColorChange(color.value);
-                          setShowColorPicker(false);
                         }}
                         onMouseDown={(e) => e.stopPropagation()}
                         className="w-7 h-7 rounded-full border-2 hover:scale-110 transition-transform"

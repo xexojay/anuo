@@ -11,6 +11,7 @@ export type ConversationCardShape = TLBaseShape<
     isLoading: boolean;
     timestamp: number;
     themeColor: string; // 主题颜色
+    showColorPicker: boolean; // 颜色选择器显示状态
   }
 >;
 
