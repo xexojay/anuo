@@ -139,14 +139,23 @@ export function updateConversationCard(
   aiResponse: string,
   isLoading: boolean = false
 ) {
-  editor.updateShape({
-    id: cardId as any,
-    type: "conversation-card",
-    props: {
-      aiResponse,
-      isLoading,
+  const shape = editor.getShape(cardId as any);
+  if (!shape) {
+    console.error("Shape not found:", cardId);
+    return;
+  }
+
+  editor.updateShapes([
+    {
+      id: cardId as any,
+      type: "conversation-card",
+      props: {
+        ...shape.props,
+        aiResponse,
+        isLoading,
+      },
     },
-  });
+  ]);
 }
 
 // 导出所有helpers
