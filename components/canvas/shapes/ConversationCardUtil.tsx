@@ -26,11 +26,6 @@ export class ConversationCardUtil extends ShapeUtil<ConversationCardShape> {
     };
   }
 
-  // 最小尺寸限制 - 只限制宽度
-  override getMinDimensions() {
-    return { w: 500, h: 100 };
-  }
-
   // 允许调整大小
   override canResize() {
     return true;
@@ -41,7 +36,7 @@ export class ConversationCardUtil extends ShapeUtil<ConversationCardShape> {
     const resized = resizeBox(shape, info);
     // 保持原有高度不变，让 useLayoutEffect 自动调整
     resized.props.h = shape.props.h;
-    // 限制最小宽度
+    // 限制最小宽度 500px
     if (resized.props.w < 500) {
       resized.props.w = 500;
     }
