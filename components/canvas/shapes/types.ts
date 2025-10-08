@@ -1,0 +1,47 @@
+import { TLBaseShape, TLDefaultColorStyle } from "tldraw";
+
+// 搜索结果卡片类型
+export type SearchResultCardShape = TLBaseShape<
+  "search-result-card",
+  {
+    w: number;
+    h: number;
+    title: string;
+    snippet: string;
+    source: "google" | "twitter";
+    url: string;
+    timestamp: string;
+    color: TLDefaultColorStyle;
+  }
+>;
+
+// 笔记卡片类型
+export type NoteCardShape = TLBaseShape<
+  "note-card",
+  {
+    w: number;
+    h: number;
+    content: string;
+    tags: string[];
+    color: TLDefaultColorStyle;
+  }
+>;
+
+// 聚类卡片类型
+export type ClusterCardShape = TLBaseShape<
+  "cluster-card",
+  {
+    w: number;
+    h: number;
+    theme: string;
+    cardIds: string[];
+    summary: string;
+    color: TLDefaultColorStyle;
+  }
+>;
+
+// 所有自定义卡片类型的联合类型
+export type CustomShape =
+  | SearchResultCardShape
+  | NoteCardShape
+  | ClusterCardShape;
