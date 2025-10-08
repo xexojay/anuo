@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     // 简单的意图识别
     const intent = detectIntent(message);
 
-    let results = [];
+    let results: any[] = [];
 
     if (intent.type === "search") {
       // 执行搜索
