@@ -120,12 +120,13 @@ export function createConversationCard(
       x: data.x ?? 100,
       y: data.y ?? 100,
       props: {
-        w: 600,
+        w: 700,
         h: 400,
         userMessage: data.userMessage,
         aiResponse: data.aiResponse || "",
         isLoading: data.isLoading ?? true,
         timestamp: Date.now(),
+        themeColor: "blue",
       },
     },
   ]);

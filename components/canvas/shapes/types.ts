@@ -10,6 +10,7 @@ export type ConversationCardShape = TLBaseShape<
     aiResponse: string;
     isLoading: boolean;
     timestamp: number;
+    themeColor: string; // 主题颜色
   }
 >;
 

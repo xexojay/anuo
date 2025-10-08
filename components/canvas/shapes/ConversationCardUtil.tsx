@@ -2,20 +2,23 @@ import {
   HTMLContainer,
   Rectangle2d,
   ShapeUtil,
+  useEditor,
 } from "tldraw";
 import { ConversationCardShape } from "./types";
+import { useState } from "react";
 
 export class ConversationCardUtil extends ShapeUtil<ConversationCardShape> {
   static override type = "conversation-card" as const;
 
   getDefaultProps(): ConversationCardShape["props"] {
     return {
-      w: 600,
+      w: 700,
       h: 400,
       userMessage: "",
       aiResponse: "",
       isLoading: false,
       timestamp: Date.now(),
+      themeColor: "blue",
     };
   }
 
@@ -28,7 +31,94 @@ export class ConversationCardUtil extends ShapeUtil<ConversationCardShape> {
   }
 
   component(shape: ConversationCardShape) {
-    const { w, h, userMessage, aiResponse, isLoading } = shape.props;
+    const { w, h, userMessage, aiResponse, isLoading, themeColor } = shape.props;
+    const editor = useEditor();
+
+    // 预置颜色
+    const colors = [
+      { name: "白色", value: "white", border: "#e5e7eb", bg: "#ffffff" },
+      { name: "红色", value: "red", border: "#fca5a5", bg: "#fef2f2" },
+      { name: "黄色", value: "yellow", border: "#fde047", bg: "#fefce8" },
+      { name: "绿色", value: "green", border: "#86efac", bg: "#f0fdf4" },
+      { name: "青色", value: "cyan", border: "#67e8f9", bg: "#ecfeff" },
+      { name: "蓝色", value: "blue", border: "#60a5fa", bg: "#eff6ff" },
+      { name: "紫色", value: "purple", border: "#c084fc", bg: "#faf5ff" },
+      { name: "粉色", value: "pink", border: "#f9a8d4", bg: "#fdf2f8" },
+      { name: "黑色", value: "black", border: "#6b7280", bg: "#f9fafb" },
+    ];
+
+    const currentColor = colors.find((c) => c.value === themeColor) || colors.find((c) => c.value === "blue")!;
+
+    const handleColorChange = (color: string) => {
+      editor.updateShapes([
+        {
+          id: shape.id,
+          type: "conversation-card",
+          props: {
+            ...shape.props,
+            themeColor: color,
+          },
+        },
+      ]);
+    };
+
+    const handleDelete = () => {
+      editor.deleteShape(shape.id);
+    };
+
+    const handleRegenerate = async () => {
+      // 设置加载状态
+      editor.updateShapes([
+        {
+          id: shape.id,
+          type: "conversation-card",
+          props: {
+            ...shape.props,
+            isLoading: true,
+            aiResponse: "",
+          },
+        },
+      ]);
+
+      // 调用API重新生成
+      try {
+        const response = await fetch("/api/ai/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: userMessage }),
+        });
+
+        const data = await response.json();
+        const newResponse = data.results?.[0]?.content || data.message || "无响应";
+
+        editor.updateShapes([
+          {
+            id: shape.id,
+            type: "conversation-card",
+            props: {
+              ...shape.props,
+              aiResponse: newResponse,
+              isLoading: false,
+            },
+          },
+        ]);
+      } catch (error) {
+        console.error("重新生成失败:", error);
+        editor.updateShapes([
+          {
+            id: shape.id,
+            type: "conversation-card",
+            props: {
+              ...shape.props,
+              aiResponse: "重新生成失败，请重试",
+              isLoading: false,
+            },
+          },
+        ]);
+      }
+    };
+
+    const [showColorPicker, setShowColorPicker] = useState(false);
 
     return (
       <HTMLContainer
@@ -38,21 +128,101 @@ export class ConversationCardUtil extends ShapeUtil<ConversationCardShape> {
           pointerEvents: "all",
         }}
       >
-        <div className="w-full h-full rounded-2xl border-2 border-blue-500 bg-white dark:bg-gray-800 overflow-hidden flex shadow-lg hover:shadow-xl transition-shadow">
-          {/* 主内容区域 */}
-          <div className="flex-1 flex flex-col overflow-hidden">
-            {/* 用户提问区域 */}
-            <div className="bg-gray-50 dark:bg-gray-700/50 px-6 py-4 border-b border-gray-200 dark:border-gray-600">
-              <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100 mb-2">
-                {userMessage || "用户提问"}
-              </h3>
+        <div
+          className="w-full h-full rounded-2xl border-3 bg-white dark:bg-gray-800 overflow-hidden flex flex-col shadow-lg hover:shadow-xl transition-shadow"
+          style={{ borderColor: currentColor.border, borderWidth: "3px" }}
+        >
+          {/* 顶部按钮栏 */}
+          <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
+            {/* 左侧按钮 */}
+            <div className="flex items-center gap-2">
+              {/* 主题按钮 */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowColorPicker(!showColorPicker)}
+                  className="px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300"
+                  title="主题"
+                >
+                  <div
+                    className="w-4 h-4 rounded-full border-2"
+                    style={{ backgroundColor: currentColor.bg, borderColor: currentColor.border }}
+                  ></div>
+                  <span>主题</span>
+                </button>
+
+                {/* 颜色选择器 */}
+                {showColorPicker && (
+                  <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 p-2 z-50 flex gap-1">
+                    {colors.map((color) => (
+                      <button
+                        key={color.value}
+                        onClick={() => {
+                          handleColorChange(color.value);
+                          setShowColorPicker(false);
+                        }}
+                        className="w-8 h-8 rounded-full border-2 hover:scale-110 transition-transform"
+                        style={{
+                          backgroundColor: color.bg,
+                          borderColor: color.border,
+                        }}
+                        title={color.name}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* 删除按钮 */}
+              <button
+                onClick={handleDelete}
+                className="px-3 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400"
+                title="删除"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                <span>删除</span>
+              </button>
             </div>
 
-            {/* AI回答区域 */}
+            {/* 右侧重新生成按钮 */}
+            <button
+              onClick={handleRegenerate}
+              disabled={isLoading}
+              className="px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300 disabled:opacity-50"
+              title="重新生成"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isLoading ? "animate-spin" : ""}>
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <polyline points="1 20 1 14 7 14"></polyline>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+              </svg>
+              <span>重新生成</span>
+            </button>
+          </div>
+
+          {/* 内容区域 */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {/* 用户提问 */}
+            <div className="px-6 py-4">
+              <p className="text-base font-medium text-gray-900 dark:text-gray-100 whitespace-pre-wrap break-words">
+                {userMessage || "用户提问"}
+              </p>
+            </div>
+
+            {/* 分隔线 */}
+            <div className="px-6">
+              <div className="border-t border-gray-200 dark:border-gray-700"></div>
+            </div>
+
+            {/* AI回答 */}
             <div className="flex-1 overflow-auto px-6 py-4">
               {isLoading ? (
                 <div className="flex items-center gap-2 text-gray-500">
-                  <span className="animate-spin">⟳</span>
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10" strokeDasharray="60" strokeDashoffset="30"></circle>
+                  </svg>
                   <span>生成中...</span>
                 </div>
               ) : (
@@ -61,55 +231,6 @@ export class ConversationCardUtil extends ShapeUtil<ConversationCardShape> {
                 </p>
               )}
             </div>
-          </div>
-
-          {/* 右侧工具按钮栏 */}
-          <div className="w-12 border-l border-gray-200 dark:border-gray-600 bg-gray-50/50 dark:bg-gray-700/30 flex flex-col items-center gap-2 py-4">
-            {/* 保存按钮 */}
-            <button
-              className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors"
-              title="保存"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                <polyline points="7 3 7 8 15 8"></polyline>
-              </svg>
-            </button>
-
-            {/* 刷新按钮 */}
-            <button
-              className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors"
-              title="重新生成"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="23 4 23 10 17 10"></polyline>
-                <polyline points="1 20 1 14 7 14"></polyline>
-                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-              </svg>
-            </button>
-
-            {/* 复制按钮 */}
-            <button
-              className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors"
-              title="复制"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-              </svg>
-            </button>
-
-            {/* 删除按钮 */}
-            <button
-              className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors"
-              title="删除"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="3 6 5 6 21 6"></polyline>
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-              </svg>
-            </button>
           </div>
         </div>
       </HTMLContainer>
