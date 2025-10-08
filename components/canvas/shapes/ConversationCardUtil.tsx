@@ -59,6 +59,7 @@ export class ConversationCardUtil extends ShapeUtil<ConversationCardShape> {
     const currentColor = colors.find((c) => c.value === themeColor) || colors.find((c) => c.value === "blue")!;
 
     const toggleColorPicker = () => {
+      console.log("Toggle color picker, current:", showColorPicker);
       editor.updateShapes([
         {
           id: shape.id,
@@ -69,9 +70,12 @@ export class ConversationCardUtil extends ShapeUtil<ConversationCardShape> {
           },
         },
       ]);
+      // 保持选中状态
+      editor.setSelectedShapes([shape.id]);
     };
 
     const handleColorChange = (color: string) => {
+      console.log("Change color to:", color);
       editor.updateShapes([
         {
           id: shape.id,
@@ -83,13 +87,22 @@ export class ConversationCardUtil extends ShapeUtil<ConversationCardShape> {
           },
         },
       ]);
+      // 保持选中状态
+      editor.setSelectedShapes([shape.id]);
     };
 
     const handleDelete = () => {
-      editor.deleteShape(shape.id);
+      console.log("Delete card:", shape.id);
+      if (confirm("确定要删除这个对话吗？")) {
+        editor.deleteShape(shape.id);
+      } else {
+        // 取消删除，保持选中
+        editor.setSelectedShapes([shape.id]);
+      }
     };
 
     const handleRegenerate = async () => {
+      console.log("Regenerate clicked");
       // 设置加载状态
       editor.updateShapes([
         {
@@ -102,6 +115,8 @@ export class ConversationCardUtil extends ShapeUtil<ConversationCardShape> {
           },
         },
       ]);
+      // 保持选中状态
+      editor.setSelectedShapes([shape.id]);
 
       // 调用API重新生成
       try {
@@ -125,6 +140,8 @@ export class ConversationCardUtil extends ShapeUtil<ConversationCardShape> {
             },
           },
         ]);
+        // 保持选中状态
+        editor.setSelectedShapes([shape.id]);
       } catch (error) {
         console.error("重新生成失败:", error);
         editor.updateShapes([
@@ -138,6 +155,8 @@ export class ConversationCardUtil extends ShapeUtil<ConversationCardShape> {
             },
           },
         ]);
+        // 保持选中状态
+        editor.setSelectedShapes([shape.id]);
       }
     };
 
