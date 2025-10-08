@@ -16,7 +16,8 @@ export function useBoard(boardId: string) {
   useEffect(() => {
     async function fetchBoard() {
       try {
-        const { data, error } = await supabase
+        if (!supabase) return;
+        const { data, error } = await (supabase as any)
           .from("boards")
           .select("*")
           .eq("id", boardId)
@@ -46,7 +47,8 @@ export function useCards(boardId: string) {
   useEffect(() => {
     async function fetchCards() {
       try {
-        const { data, error } = await supabase
+        if (!supabase) return;
+        const { data, error } = await (supabase as any)
           .from("cards")
           .select("*")
           .eq("board_id", boardId)
@@ -64,6 +66,8 @@ export function useCards(boardId: string) {
     fetchCards();
 
     // 订阅实时更新
+    if (!supabase) return;
+
     const channel = supabase
       .channel(`cards:${boardId}`)
       .on(
@@ -93,7 +97,9 @@ export function useCards(boardId: string) {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      if (supabase) {
+        supabase.removeChannel(channel);
+      }
     };
   }, [boardId]);
 
@@ -102,7 +108,8 @@ export function useCards(boardId: string) {
 
 // 保存白板状态
 export async function saveCanvasState(boardId: string, canvasState: any) {
-  const { error } = await supabase
+  if (!supabase) return;
+  const { error } = await (supabase as any)
     .from("boards")
     .update({ canvas_state: canvasState })
     .eq("id", boardId);
@@ -118,7 +125,8 @@ export async function createCard(cardData: {
   position: { x: number; y: number };
   metadata?: any;
 }) {
-  const { data, error } = await supabase
+  if (!supabase) return;
+  const { data, error } = await (supabase as any)
     .from("cards")
     .insert(cardData)
     .select()
@@ -130,7 +138,7 @@ export async function createCard(cardData: {
 
 // 更新卡片
 export async function updateCard(cardId: string, updates: Partial<Card>) {
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from("cards")
     .update(updates)
     .eq("id", cardId);
@@ -140,7 +148,8 @@ export async function updateCard(cardId: string, updates: Partial<Card>) {
 
 // 删除卡片
 export async function deleteCard(cardId: string) {
-  const { error } = await supabase.from("cards").delete().eq("id", cardId);
+  if (!supabase) return;
+  const { error } = await (supabase as any).from("cards").delete().eq("id", cardId);
 
   if (error) throw error;
 }

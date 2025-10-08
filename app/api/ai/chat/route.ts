@@ -78,8 +78,8 @@ function detectIntent(message: string) {
       type: "search" as const,
       query: query || message,
       sources: hasTwitterKeyword
-        ? (["google", "twitter"] as const)
-        : (["google"] as const),
+        ? ["google", "twitter"] as ("google" | "twitter")[]
+        : ["google"] as ("google" | "twitter")[],
     };
   }
 
@@ -98,7 +98,7 @@ function detectIntent(message: string) {
   return {
     type: "search" as const,
     query: message,
-    sources: ["google"] as const,
+    sources: ["google"] as ("google" | "twitter")[],
   };
 }
 

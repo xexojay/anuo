@@ -37,9 +37,7 @@ export default function PresenceIndicator({ boardId }: PresenceIndicatorProps) {
     channel.on("presence", { event: "leave" }, handlePresenceSync);
 
     return () => {
-      channel.off("presence", { event: "sync" });
-      channel.off("presence", { event: "join" });
-      channel.off("presence", { event: "leave" });
+      channel.unsubscribe();
     };
   }, [channel]);
 

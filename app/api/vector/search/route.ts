@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     const supabase = createServerClient();
 
     // 使用Supabase的向量搜索函数
-    const { data, error } = await supabase.rpc("match_cards", {
+    const { data, error } = await (supabase.rpc as any)("match_cards", {
       query_embedding: embedding,
       match_threshold: threshold,
       match_count: limit,

@@ -2,8 +2,6 @@ import {
   HTMLContainer,
   Rectangle2d,
   ShapeUtil,
-  TLOnResizeHandler,
-  resizeBox,
 } from "tldraw";
 import { NoteCardShape } from "./types";
 
@@ -101,7 +99,4 @@ export class NoteCardUtil extends ShapeUtil<NoteCardShape> {
 
   override canResize = () => true;
 
-  override onResize: TLOnResizeHandler<NoteCardShape> = (shape, info) => {
-    return resizeBox(shape, info);
-  };
 }

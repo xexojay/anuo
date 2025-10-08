@@ -2,8 +2,6 @@ import {
   HTMLContainer,
   Rectangle2d,
   ShapeUtil,
-  TLOnResizeHandler,
-  resizeBox,
   DefaultColorStyle,
 } from "tldraw";
 import { SearchResultCardShape } from "./types";
@@ -140,10 +138,4 @@ export class SearchResultCardUtil extends ShapeUtil<SearchResultCardShape> {
 
   override canResize = () => true;
 
-  override onResize: TLOnResizeHandler<SearchResultCardShape> = (
-    shape,
-    info
-  ) => {
-    return resizeBox(shape, info);
-  };
 }

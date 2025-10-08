@@ -2,8 +2,6 @@ import {
   HTMLContainer,
   Rectangle2d,
   ShapeUtil,
-  TLOnResizeHandler,
-  resizeBox,
 } from "tldraw";
 import { ClusterCardShape } from "./types";
 
@@ -17,7 +15,7 @@ export class ClusterCardUtil extends ShapeUtil<ClusterCardShape> {
       theme: "",
       cardIds: [],
       summary: "",
-      color: "purple",
+      color: "violet",
     };
   }
 
@@ -106,7 +104,4 @@ export class ClusterCardUtil extends ShapeUtil<ClusterCardShape> {
 
   override canResize = () => true;
 
-  override onResize: TLOnResizeHandler<ClusterCardShape> = (shape, info) => {
-    return resizeBox(shape, info);
-  };
 }
