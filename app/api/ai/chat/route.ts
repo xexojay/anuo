@@ -40,8 +40,8 @@ export async function POST(req: NextRequest) {
           content: message,
         },
       ];
-    } else {
-      // 默认使用AI对话
+    } else if (intent.type === "chat") {
+      // AI对话
       const aiResponse = await chatWithText(message);
       results = [
         {
@@ -69,13 +69,10 @@ export async function POST(req: NextRequest) {
 function detectIntent(message: string) {
   const lowerMessage = message.toLowerCase();
 
-  // 检测搜索意图
+  // 检测搜索意图 - 只有明确的搜索关键词才触发
   const searchKeywords = [
     "搜索",
-    "查找",
-    "找",
     "search",
-    "find",
     "google",
     "twitter",
   ];
@@ -120,11 +117,10 @@ function detectIntent(message: string) {
     };
   }
 
-  // 默认为搜索
+  // 默认为AI对话
   return {
-    type: "search" as const,
+    type: "chat" as const,
     query: message,
-    sources: ["google"] as ("google" | "twitter")[],
   };
 }
 

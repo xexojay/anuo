@@ -68,21 +68,14 @@ export class SearchResultCardUtil extends ShapeUtil<SearchResultCardShape> {
           pointerEvents: "all",
         }}
       >
-        <div
-          className={`
-            w-full h-full rounded-xl border-2 ${colorMap[color] || colorMap.blue}
-            p-5 flex flex-col gap-3 shadow-lg hover:shadow-xl
-            overflow-hidden transition-all duration-200 backdrop-blur-sm
-            bg-white/95
-          `}
-        >
+        <div className="w-full h-full rounded-2xl border-2 border-blue-500 bg-white dark:bg-gray-800 p-5 flex flex-col gap-3 shadow-md hover:shadow-lg overflow-hidden transition-shadow">
           {/* 顶部来源标签 */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className={`w-6 h-6 ${accentColorMap[color] || accentColorMap.blue} rounded-md flex items-center justify-center text-white text-xs font-bold`}>
+              <div className="w-7 h-7 bg-blue-500 rounded-lg flex items-center justify-center text-white">
                 {sourceInfo.icon}
               </div>
-              <span className={`text-xs font-medium ${sourceInfo.color}`}>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 {sourceInfo.label}
               </span>
             </div>
