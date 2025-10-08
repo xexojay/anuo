@@ -28,6 +28,7 @@ export default function CanvasBoard() {
   return (
     <div className="w-full h-full">
       <Tldraw
+        licenseKey="tldraw-2026-01-16/WyJWRWhsMVF3SyIsWyIqIl0sMTYsIjIwMjYtMDEtMTYiXQ.tO8boFJ9CVBczuAANNGoloMTmx1Uqrg358a5bcaBn2+BzxELLy4I9/AZsDbHl5YtASwwvet5cMg2PaZ5Ws/3cA"
         shapeUtils={customShapeUtils}
         persistenceKey={`research-canvas-${boardId}`}
         onMount={(editor) => {
