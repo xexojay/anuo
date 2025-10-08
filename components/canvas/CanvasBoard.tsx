@@ -10,6 +10,7 @@ import {
 } from "./shapes";
 import { useEditorContext } from "./EditorContext";
 import { useParams } from "next/navigation";
+import ShapeActionButtons from "./ShapeActionButtons";
 
 // 自定义shapes数组（在组件外定义，避免重渲染）
 const customShapeUtils = [
@@ -40,6 +41,8 @@ export default function CanvasBoard() {
           PageMenu: null,       // 隐藏页面菜单
           MainMenu: null,       // 隐藏主菜单
           QuickActions: null,   // 隐藏快捷操作
+          // 自定义UI组件 - 显示shape的操作按钮
+          InFrontOfTheCanvas: ShapeActionButtons,
           // NavigationPanel（缩放+Minimap）通过CSS移到右下角
           // 保留有用的组件：
           // - NavigationPanel（通过CSS调整位置）
