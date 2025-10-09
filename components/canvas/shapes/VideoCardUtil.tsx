@@ -7,7 +7,7 @@ import {
   useEditor,
 } from "tldraw";
 import { VideoCardShape } from "./types";
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 
 export class VideoCardUtil extends ShapeUtil<VideoCardShape> {
   static override type = "video-card" as const;
@@ -56,6 +56,48 @@ export class VideoCardUtil extends ShapeUtil<VideoCardShape> {
     const { w, h, videoUrl, prompt, isLoading, progress } = shape.props;
     const videoRef = useRef<HTMLVideoElement>(null);
     const editor = useEditor();
+    const [loadProgress, setLoadProgress] = useState(0);
+    const [isBuffering, setIsBuffering] = useState(false);
+
+    // 视频加载进度监听
+    useEffect(() => {
+      const video = videoRef.current;
+      if (!video) return;
+
+      const handleProgress = () => {
+        if (video.buffered.length > 0) {
+          const bufferedEnd = video.buffered.end(video.buffered.length - 1);
+          const duration = video.duration;
+          if (duration > 0) {
+            const progress = (bufferedEnd / duration) * 100;
+            setLoadProgress(progress);
+            console.log(`[视频卡片] 缓冲进度: ${progress.toFixed(1)}%`);
+          }
+        }
+      };
+
+      const handleWaiting = () => {
+        setIsBuffering(true);
+        console.log(`[视频卡片] 缓冲中...`);
+      };
+
+      const handleCanPlay = () => {
+        setIsBuffering(false);
+        console.log(`[视频卡片] 可以播放`);
+      };
+
+      video.addEventListener('progress', handleProgress);
+      video.addEventListener('waiting', handleWaiting);
+      video.addEventListener('canplay', handleCanPlay);
+      video.addEventListener('canplaythrough', handleCanPlay);
+
+      return () => {
+        video.removeEventListener('progress', handleProgress);
+        video.removeEventListener('waiting', handleWaiting);
+        video.removeEventListener('canplay', handleCanPlay);
+        video.removeEventListener('canplaythrough', handleCanPlay);
+      };
+    }, [videoUrl]);
 
     // 视频加载完成后自动调整卡片大小
     const handleVideoLoaded = () => {
@@ -132,19 +174,55 @@ export class VideoCardUtil extends ShapeUtil<VideoCardShape> {
                 </span>
               </div>
             ) : videoUrl ? (
-              <video
-                ref={videoRef}
-                src={videoUrl}
-                controls
-                className="max-w-full max-h-full"
-                style={{
-                  width: "100%",
-                  height: "100%",
-                }}
-                onLoadedMetadata={handleVideoLoaded}
-              >
-                您的浏览器不支持视频播放
-              </video>
+              <>
+                <video
+                  ref={videoRef}
+                  src={videoUrl}
+                  controls
+                  preload="metadata"
+                  playsInline
+                  className="max-w-full max-h-full"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                  }}
+                  onLoadedMetadata={handleVideoLoaded}
+                >
+                  您的浏览器不支持视频播放
+                </video>
+                {/* 缓冲指示器 */}
+                {isBuffering && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                    <div className="flex flex-col items-center gap-2 text-white">
+                      <svg
+                        className="animate-spin h-8 w-8"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <circle
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          strokeDasharray="60"
+                          strokeDashoffset="30"
+                        ></circle>
+                      </svg>
+                      <span className="text-xs">缓冲中...</span>
+                    </div>
+                  </div>
+                )}
+                {/* 加载进度条 */}
+                {loadProgress < 100 && loadProgress > 0 && (
+                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-700/50">
+                    <div
+                      className="h-full bg-blue-500 transition-all duration-300"
+                      style={{ width: `${loadProgress}%` }}
+                    />
+                  </div>
+                )}
+              </>
             ) : (
               <div className="text-gray-400 text-sm">视频加载失败</div>
             )}

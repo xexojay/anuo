@@ -75,6 +75,20 @@ export async function pollVideoStatus({
         // 检查是否完成
         if (videoUrl && (status === "completed" || status === "success" || !status)) {
           console.log(`[视频轮询] ✅ 视频生成成功: ${videoUrl}`);
+
+          // 预加载视频元数据以加快后续播放
+          try {
+            console.log(`[视频轮询] 开始预加载视频元数据...`);
+            const video = document.createElement('video');
+            video.preload = 'metadata';
+            video.src = videoUrl;
+            // 触发元数据加载
+            video.load();
+            console.log(`[视频轮询] 视频元数据预加载已触发`);
+          } catch (preloadError) {
+            console.warn(`[视频轮询] 预加载失败（非关键错误）:`, preloadError);
+          }
+
           editor.updateShapes([
             {
               id: cardId as any,
