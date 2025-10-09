@@ -1,8 +1,10 @@
 "use client";
 
 import { useEditor, useValue } from "tldraw";
-import { ConversationCardShape } from "./shapes/types";
+import { ConversationCardShape, ImageCardShape, VideoCardShape } from "./shapes/types";
 import { useState } from "react";
+import { pollVideoStatus } from "@/lib/video-polling";
+import { useToasts } from "tldraw";
 
 /**
  * 自定义UI组件 - 显示选中shape的操作按钮
@@ -20,7 +22,10 @@ export default function ShapeActionButtons() {
     if (ids.length !== 1) return null;
 
     const shape = editor.getShape(ids[0]);
-    if (!shape || shape.type !== "conversation-card") return null;
+
+    // 支持的卡片类型
+    const supportedTypes = ["conversation-card", "image-card", "video-card"];
+    if (!shape || !supportedTypes.includes(shape.type)) return null;
 
     const bounds = editor.getShapePageBounds(shape.id);
     if (!bounds) return null;
@@ -30,7 +35,7 @@ export default function ShapeActionButtons() {
     const topRight = editor.pageToScreen({ x: bounds.x + bounds.w, y: bounds.y });
 
     return {
-      shape: shape as ConversationCardShape,
+      shape,
       topLeft,
       topRight,
     };
@@ -40,8 +45,25 @@ export default function ShapeActionButtons() {
   if (!shapeData) return null;
 
   const { shape, topLeft, topRight } = shapeData;
-  const conversationShape = shape as ConversationCardShape;
-  const { themeColor, showColorPicker, userMessage } = conversationShape.props;
+
+  // 根据类型渲染不同的按钮
+  if (shape.type === "conversation-card") {
+    return <ConversationCardButtons shape={shape as ConversationCardShape} topLeft={topLeft} topRight={topRight} />;
+  } else if (shape.type === "image-card") {
+    return <ImageCardButtons shape={shape as ImageCardShape} topLeft={topLeft} topRight={topRight} />;
+  } else if (shape.type === "video-card") {
+    return <VideoCardButtons shape={shape as VideoCardShape} topLeft={topLeft} topRight={topRight} />;
+  }
+
+  return null;
+}
+
+/**
+ * 对话卡片按钮
+ */
+function ConversationCardButtons({ shape, topLeft, topRight }: { shape: ConversationCardShape; topLeft: any; topRight: any }) {
+  const editor = useEditor();
+  const { themeColor, showColorPicker, userMessage } = shape.props;
 
   // 预置颜色
   const colors = [
@@ -65,7 +87,7 @@ export default function ShapeActionButtons() {
         id: shape.id,
         type: "conversation-card",
         props: {
-          ...conversationShape.props,
+          ...shape.props,
           showColorPicker: !showColorPicker,
         },
       },
@@ -79,7 +101,7 @@ export default function ShapeActionButtons() {
         id: shape.id,
         type: "conversation-card",
         props: {
-          ...conversationShape.props,
+          ...shape.props,
           themeColor: color,
           showColorPicker: false,
         },
@@ -101,7 +123,7 @@ export default function ShapeActionButtons() {
         id: shape.id,
         type: "conversation-card",
         props: {
-          ...conversationShape.props,
+          ...shape.props,
           isLoading: true,
           aiResponse: "",
         },
@@ -123,7 +145,7 @@ export default function ShapeActionButtons() {
           id: shape.id,
           type: "conversation-card",
           props: {
-            ...conversationShape.props,
+            ...shape.props,
             aiResponse: newResponse,
             isLoading: false,
           },
@@ -136,7 +158,7 @@ export default function ShapeActionButtons() {
           id: shape.id,
           type: "conversation-card",
           props: {
-            ...conversationShape.props,
+            ...shape.props,
             aiResponse: "重新生成失败，请重试",
             isLoading: false,
           },
@@ -156,7 +178,7 @@ export default function ShapeActionButtons() {
         id: shape.id,
         type: "conversation-card",
         props: {
-          ...conversationShape.props,
+          ...shape.props,
           w: 700, // 默认宽度
           h: contentHeight, // 内容所需高度
         },
@@ -263,10 +285,388 @@ export default function ShapeActionButtons() {
       >
         <button
           onClick={handleRegenerate}
-          disabled={conversationShape.props.isLoading}
+          disabled={shape.props.isLoading}
           className="w-8 h-8 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-center text-gray-600 dark:text-gray-400 disabled:opacity-50"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={conversationShape.props.isLoading ? "animate-spin" : ""}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={shape.props.isLoading ? "animate-spin" : ""}>
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <polyline points="1 20 1 14 7 14"></polyline>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+        </button>
+
+        {/* Tooltip */}
+        <div className="absolute top-1/2 -translate-y-1/2 left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap">
+          重新生成
+        </div>
+      </div>
+    </>
+  );
+}
+
+/**
+ * 图片卡片按钮
+ */
+function ImageCardButtons({ shape, topLeft, topRight }: { shape: ImageCardShape; topLeft: any; topRight: any }) {
+  const editor = useEditor();
+  const toasts = useToasts();
+
+  const handleDelete = () => {
+    if (confirm("确定要删除这张图片吗？")) {
+      editor.deleteShape(shape.id);
+    }
+  };
+
+  // 复制原图到剪贴板（无边距）
+  const handleCopyOriginal = async () => {
+    try {
+      const response = await fetch(shape.props.imageUrl);
+      const blob = await response.blob();
+
+      await navigator.clipboard.write([
+        new ClipboardItem({ [blob.type]: blob }),
+      ]);
+
+      console.log("✅ 原图已复制到剪贴板");
+
+      // 显示成功提示
+      toasts.addToast({
+        title: "复制成功",
+        severity: "success",
+      });
+    } catch (error) {
+      console.error("复制原图失败:", error);
+
+      // 显示错误提示
+      toasts.addToast({
+        title: "复制失败",
+        description: "请重试",
+        severity: "error",
+      });
+    }
+  };
+
+  // 下载原图（无边距）
+  const handleDownloadOriginal = async () => {
+    try {
+      const response = await fetch(shape.props.imageUrl);
+      const blob = await response.blob();
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `image-${Date.now()}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      console.log("✅ 原图已下载");
+
+      // 显示成功提示
+      toasts.addToast({
+        title: "下载成功",
+        severity: "success",
+      });
+    } catch (error) {
+      console.error("下载原图失败:", error);
+
+      // 显示错误提示
+      toasts.addToast({
+        title: "下载失败",
+        description: "请重试",
+        severity: "error",
+      });
+    }
+  };
+
+  const handleRegenerate = async () => {
+    console.log("重新生成图片");
+
+    // 设置加载状态
+    editor.updateShapes([
+      {
+        id: shape.id,
+        type: "image-card",
+        props: {
+          ...shape.props,
+          isLoading: true,
+          imageUrl: "",
+        },
+      },
+    ]);
+
+    try {
+      const response = await fetch("/api/ai/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: shape.props.prompt,
+          model: "nano-banana",
+          baseUrl: "https://api.tu-zi.com",
+          modelType: "image",
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.results?.[0]?.imageUrl) {
+        editor.updateShapes([
+          {
+            id: shape.id,
+            type: "image-card",
+            props: {
+              ...shape.props,
+              imageUrl: data.results[0].imageUrl,
+              isLoading: false,
+            },
+          },
+        ]);
+      } else {
+        throw new Error("图片生成失败");
+      }
+    } catch (error) {
+      console.error("重新生成图片失败:", error);
+      editor.updateShapes([
+        {
+          id: shape.id,
+          type: "image-card",
+          props: {
+            ...shape.props,
+            isLoading: false,
+          },
+        },
+      ]);
+    }
+  };
+
+  return (
+    <>
+      <div
+        className="absolute flex items-center gap-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 px-1 py-1 z-[9999]"
+        style={{
+          left: `${topLeft.x}px`,
+          top: `${topLeft.y - 48}px`,
+          pointerEvents: 'auto',
+        }}
+      >
+        {/* 复制原图按钮 */}
+        <div className="relative group">
+          <button
+            onClick={handleCopyOriginal}
+            disabled={shape.props.isLoading}
+            className="w-8 h-8 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-center text-gray-600 dark:text-gray-400 disabled:opacity-50"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+          </button>
+
+          {/* Tooltip */}
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap">
+            复制原图
+          </div>
+        </div>
+
+        {/* 下载原图按钮 */}
+        <div className="relative group">
+          <button
+            onClick={handleDownloadOriginal}
+            disabled={shape.props.isLoading}
+            className="w-8 h-8 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-center text-gray-600 dark:text-gray-400 disabled:opacity-50"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+          </button>
+
+          {/* Tooltip */}
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap">
+            下载原图
+          </div>
+        </div>
+
+        {/* 删除按钮 */}
+        <div className="relative group">
+          <button
+            onClick={handleDelete}
+            className="w-8 h-8 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center justify-center text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+          </button>
+
+          {/* Tooltip */}
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap">
+            删除
+          </div>
+        </div>
+      </div>
+
+      {/* 右侧顶部重新生成按钮 */}
+      <div
+        className="absolute bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-1 z-[9999] group"
+        style={{
+          left: `${topRight.x + 8}px`,
+          top: `${topRight.y}px`,
+          pointerEvents: 'auto',
+        }}
+      >
+        <button
+          onClick={handleRegenerate}
+          disabled={shape.props.isLoading}
+          className="w-8 h-8 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-center text-gray-600 dark:text-gray-400 disabled:opacity-50"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={shape.props.isLoading ? "animate-spin" : ""}>
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <polyline points="1 20 1 14 7 14"></polyline>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+        </button>
+
+        {/* Tooltip */}
+        <div className="absolute top-1/2 -translate-y-1/2 left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap">
+          重新生成
+        </div>
+      </div>
+    </>
+  );
+}
+
+/**
+ * 视频卡片按钮
+ */
+function VideoCardButtons({ shape, topLeft, topRight }: { shape: VideoCardShape; topLeft: any; topRight: any }) {
+  const editor = useEditor();
+
+  const handleDelete = () => {
+    if (confirm("确定要删除这个视频吗？")) {
+      editor.deleteShape(shape.id);
+    }
+  };
+
+  const handleRegenerate = async () => {
+    console.log("重新生成视频");
+
+    // 设置加载状态
+    editor.updateShapes([
+      {
+        id: shape.id,
+        type: "video-card",
+        props: {
+          ...shape.props,
+          isLoading: true,
+          videoUrl: "",
+          progress: "提交视频生成任务...",
+        },
+      },
+    ]);
+
+    try {
+      const response = await fetch("/api/ai/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: shape.props.prompt,
+          model: "sora-2",
+          baseUrl: "https://asyncdata.net/tran/https://api.tu-zi.com",
+          modelType: "video",
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.results?.[0]) {
+        const result = data.results[0];
+
+        // 更新任务ID
+        editor.updateShapes([
+          {
+            id: shape.id,
+            type: "video-card",
+            props: {
+              ...shape.props,
+              taskId: result.taskId,
+              progress: "视频生成中...",
+            },
+          },
+        ]);
+
+        // 开始轮询
+        pollVideoStatus({
+          editor,
+          cardId: shape.id,
+          taskId: result.taskId,
+          sourceUrl: result.sourceUrl,
+        });
+      } else {
+        throw new Error("视频任务提交失败");
+      }
+    } catch (error) {
+      console.error("重新生成视频失败:", error);
+      editor.updateShapes([
+        {
+          id: shape.id,
+          type: "video-card",
+          props: {
+            ...shape.props,
+            isLoading: false,
+            progress: "视频生成失败",
+          },
+        },
+      ]);
+    }
+  };
+
+  return (
+    <>
+      <div
+        className="absolute flex items-center gap-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 px-1 py-1 z-[9999]"
+        style={{
+          left: `${topLeft.x}px`,
+          top: `${topLeft.y - 48}px`,
+          pointerEvents: 'auto',
+        }}
+      >
+        {/* 删除按钮 */}
+        <div className="relative group">
+          <button
+            onClick={handleDelete}
+            className="w-8 h-8 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center justify-center text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+          </button>
+
+          {/* Tooltip */}
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap">
+            删除
+          </div>
+        </div>
+      </div>
+
+      {/* 右侧顶部重新生成按钮 */}
+      <div
+        className="absolute bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-1 z-[9999] group"
+        style={{
+          left: `${topRight.x + 8}px`,
+          top: `${topRight.y}px`,
+          pointerEvents: 'auto',
+        }}
+      >
+        <button
+          onClick={handleRegenerate}
+          disabled={shape.props.isLoading}
+          className="w-8 h-8 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-center text-gray-600 dark:text-gray-400 disabled:opacity-50"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={shape.props.isLoading ? "animate-spin" : ""}>
             <polyline points="23 4 23 10 17 10"></polyline>
             <polyline points="1 20 1 14 7 14"></polyline>
             <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>

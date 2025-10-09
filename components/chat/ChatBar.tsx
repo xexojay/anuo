@@ -3,14 +3,25 @@
 import { useState, useRef } from "react";
 import { useEditorContext } from "@/components/canvas/EditorContext";
 import { cardHelpers } from "@/components/canvas/helpers";
+import ModelSelector from "./ModelSelector";
+import { getDefaultModel, ModelConfig } from "@/lib/ai/models";
+import { pollVideoStatus } from "@/lib/video-polling";
 
 export default function ChatBar() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [images, setImages] = useState<string[]>([]); // 存储图片的 base64
+  const [selectedModel, setSelectedModel] = useState<ModelConfig>(getDefaultModel());
   const { editor } = useEditorContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 处理模型切换
+  const handleModelChange = (model: ModelConfig) => {
+    setSelectedModel(model);
+    // 在输入框插入 @模型名称
+    setInput(`@${model.name} `);
+  };
 
   // 处理图片上传
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -33,11 +44,21 @@ export default function ChatBar() {
     setImages((prev) => prev.filter((_, i) => i !== index));
   };
 
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading || !editor) return;
 
-    const userMessage = input;
+    // 提取实际消息内容（移除 @模型名称 前缀）
+    let userMessage = input;
+    const modelPrefix = `@${selectedModel.name} `;
+    if (userMessage.startsWith(modelPrefix)) {
+      userMessage = userMessage.slice(modelPrefix.length);
+    }
+
+    // 如果移除前缀后没有内容，不提交
+    if (!userMessage.trim()) return;
+
     const userImages = images;
 
     setIsLoading(true);
@@ -53,7 +74,8 @@ export default function ChatBar() {
       y: 100,
     });
 
-    // 自动缩放到卡片
+    // 选中并聚焦到卡片
+    editor.select(cardId);
     editor.zoomToSelection({ animation: { duration: 400 } });
 
     try {
@@ -64,13 +86,71 @@ export default function ChatBar() {
         body: JSON.stringify({
           message: userMessage,
           images: userImages.length > 0 ? userImages : undefined,
+          model: selectedModel.model,
+          baseUrl: selectedModel.baseUrl,
+          modelType: selectedModel.type,
         }),
       });
 
       const data = await response.json();
 
+      // 处理API错误
+      if (!response.ok || data.error) {
+        const errorMsg = data.error || "请求失败";
+        setMessage(errorMsg);
+        cardHelpers.updateConversationCard(editor, cardId, errorMsg, false);
+        editor.select(cardId);
+        editor.zoomToSelection({ animation: { duration: 400 } });
+        return;
+      }
+
+      // 处理图片生成
+      if (data.intent === "image_generation" && data.results?.[0]) {
+        // 删除对话卡片
+        editor.deleteShape(cardId as any);
+
+        // 创建图片卡片
+        const result = data.results[0];
+        const imageCardId = cardHelpers.createImageCard(editor, {
+          imageUrl: result.imageUrl,
+          prompt: result.prompt,
+          isLoading: false,
+          x: 100,
+          y: 100,
+        });
+
+        editor.select(imageCardId);
+        editor.zoomToSelection({ animation: { duration: 400 } });
+      }
+      // 处理视频生成
+      else if (data.intent === "video_generation" && data.results?.[0]) {
+        // 删除对话卡片
+        editor.deleteShape(cardId as any);
+
+        // 创建视频卡片
+        const result = data.results[0];
+        const videoCardId = cardHelpers.createVideoCard(editor, {
+          prompt: result.prompt,
+          isLoading: true,
+          taskId: result.taskId,
+          progress: "提交视频生成任务...",
+          x: 100,
+          y: 100,
+        });
+
+        // 开始轮询视频状态
+        pollVideoStatus({
+          editor,
+          cardId: videoCardId,
+          taskId: result.taskId,
+          sourceUrl: result.sourceUrl,
+        });
+
+        editor.select(videoCardId);
+        editor.zoomToSelection({ animation: { duration: 400 } });
+      }
       // 处理搜索结果（如果是搜索）
-      if (data.intent === "search" && data.results && data.results.length > 0) {
+      else if (data.intent === "search" && data.results && data.results.length > 0) {
         // 先删除对话卡片
         editor.deleteShape(cardId as any);
 
@@ -96,6 +176,8 @@ export default function ChatBar() {
         // AI对话或图片识别 - 更新对话卡片
         const aiResponse = data.results?.[0]?.content || data.message || "无响应";
         cardHelpers.updateConversationCard(editor, cardId, aiResponse, false);
+        editor.select(cardId);
+        editor.zoomToSelection({ animation: { duration: 400 } });
       }
 
       setMessage(data.message);
@@ -143,14 +225,11 @@ export default function ChatBar() {
 
         <form onSubmit={handleSubmit} className="relative">
           <div className="flex items-center gap-3 px-4 py-3">
-            {/* @ 按钮 */}
-            <button
-              type="button"
-              className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors text-lg font-medium"
-              title="@提及"
-            >
-              @
-            </button>
+            {/* 模型选择器 */}
+            <ModelSelector
+              selectedModel={selectedModel}
+              onModelChange={handleModelChange}
+            />
 
             {/* 图片上传按钮 */}
             <button

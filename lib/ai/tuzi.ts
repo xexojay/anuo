@@ -1,11 +1,15 @@
 /**
  * 兔子AI客户端
- * 支持文本对话和图片识别
+ * 支持文本对话、图片识别、图片生成和视频生成
  */
 
 const TUZI_API_KEY = process.env.TUZI_API_KEY || "";
 const TUZI_BASE_URL = process.env.TUZI_BASE_URL || "https://api.tu-zi.com";
 const TUZI_MODEL = process.env.TUZI_MODEL || "gpt-5";
+
+// 视频异步任务轮询配置
+const VIDEO_POLL_INTERVAL = 3000; // 3秒
+const VIDEO_MAX_POLL_ATTEMPTS = 60; // 最多轮询60次（3分钟）
 
 export interface TuziMessage {
   role: "user" | "assistant" | "system";
@@ -32,10 +36,12 @@ export interface TuziChatOptions {
  */
 export async function tuzuChat(
   messages: TuziMessage[],
-  options: TuziChatOptions = {}
+  options: TuziChatOptions = {},
+  baseUrl?: string
 ) {
   try {
-    const response = await fetch(`${TUZI_BASE_URL}/v1/messages`, {
+    const apiUrl = baseUrl || TUZI_BASE_URL;
+    const response = await fetch(`${apiUrl}/v1/messages`, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${TUZI_API_KEY}`,
@@ -170,4 +176,165 @@ export async function chatWithTextAndImages(
   }
 
   return response.content || "";
+}
+
+/**
+ * 图片生成（文生图）
+ */
+export async function generateImage(
+  prompt: string,
+  model: string = "nano-banana",
+  baseUrl: string = TUZI_BASE_URL
+) {
+  try {
+    const response = await fetch(`${baseUrl}/v1/images/generations`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${TUZI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        prompt,
+        n: 1,
+        size: "1024x1024",
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`图片生成API错误: ${response.status} - ${error}`);
+    }
+
+    const data = await response.json();
+
+    // 返回图片URL
+    if (data.data && data.data.length > 0) {
+      return data.data[0].url;
+    }
+
+    throw new Error("未能生成图片");
+  } catch (error) {
+    console.error("图片生成失败:", error);
+    throw error;
+  }
+}
+
+/**
+ * 视频生成（异步）- 提交任务
+ */
+export async function generateVideoTask(
+  prompt: string,
+  model: string = "sora-2",
+  baseUrl: string = "https://asyncdata.net/tran/https://api.tu-zi.com"
+) {
+  try {
+    const response = await fetch(`${baseUrl}/v1/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${TUZI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`视频生成任务提交失败: ${response.status} - ${error}`);
+    }
+
+    const data = await response.json();
+
+    // 返回任务信息
+    if (data.id && data.preview_url) {
+      return {
+        taskId: data.id,
+        previewUrl: data.preview_url,
+        sourceUrl: data.source_url,
+      };
+    }
+
+    throw new Error("视频任务提交失败");
+  } catch (error) {
+    console.error("视频生成任务提交失败:", error);
+    throw error;
+  }
+}
+
+/**
+ * 视频生成 - 查询任务状态
+ */
+export async function pollVideoTask(
+  taskId: string,
+  sourceUrl: string
+): Promise<{ status: "pending" | "completed" | "failed"; videoUrl?: string }> {
+  try {
+    const response = await fetch(sourceUrl);
+
+    if (!response.ok) {
+      return { status: "pending" };
+    }
+
+    const data = await response.json();
+
+    // 检查是否完成
+    if (data.status === "completed" && data.output) {
+      return {
+        status: "completed",
+        videoUrl: data.output.video_url || data.output,
+      };
+    }
+
+    if (data.status === "failed") {
+      return { status: "failed" };
+    }
+
+    return { status: "pending" };
+  } catch (error) {
+    console.error("视频任务轮询失败:", error);
+    return { status: "pending" };
+  }
+}
+
+/**
+ * 视频生成 - 完整流程（提交 + 轮询）
+ */
+export async function generateVideo(
+  prompt: string,
+  model: string = "sora-2",
+  baseUrl: string = "https://asyncdata.net/tran/https://api.tu-zi.com",
+  onProgress?: (status: string) => void
+): Promise<string> {
+  // 提交任务
+  onProgress?.("提交视频生成任务...");
+  const task = await generateVideoTask(prompt, model, baseUrl);
+
+  // 轮询任务状态
+  let attempts = 0;
+  while (attempts < VIDEO_MAX_POLL_ATTEMPTS) {
+    await new Promise((resolve) => setTimeout(resolve, VIDEO_POLL_INTERVAL));
+    attempts++;
+
+    onProgress?.(`生成中... (${attempts}/${VIDEO_MAX_POLL_ATTEMPTS})`);
+
+    const result = await pollVideoTask(task.taskId, task.sourceUrl);
+
+    if (result.status === "completed" && result.videoUrl) {
+      return result.videoUrl;
+    }
+
+    if (result.status === "failed") {
+      throw new Error("视频生成失败");
+    }
+  }
+
+  throw new Error("视频生成超时");
 }

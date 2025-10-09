@@ -55,9 +55,39 @@ export type ClusterCardShape = TLBaseShape<
   }
 >;
 
+// 图片卡片类型
+export type ImageCardShape = TLBaseShape<
+  "image-card",
+  {
+    w: number;
+    h: number;
+    imageUrl: string;
+    prompt: string;
+    isLoading: boolean;
+    timestamp: number;
+  }
+>;
+
+// 视频卡片类型
+export type VideoCardShape = TLBaseShape<
+  "video-card",
+  {
+    w: number;
+    h: number;
+    videoUrl: string;
+    prompt: string;
+    isLoading: boolean;
+    taskId?: string;
+    progress?: string;
+    timestamp: number;
+  }
+>;
+
 // 所有自定义卡片类型的联合类型
 export type CustomShape =
   | ConversationCardShape
   | SearchResultCardShape
   | NoteCardShape
-  | ClusterCardShape;
+  | ClusterCardShape
+  | ImageCardShape
+  | VideoCardShape;

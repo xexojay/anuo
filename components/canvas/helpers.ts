@@ -4,6 +4,8 @@ import type {
   SearchResultCardShape,
   NoteCardShape,
   ClusterCardShape,
+  ImageCardShape,
+  VideoCardShape,
 } from "./shapes";
 
 // 创建搜索结果卡片
@@ -160,6 +162,126 @@ export function updateConversationCard(
   ]);
 }
 
+// 创建图片卡片
+export function createImageCard(
+  editor: Editor,
+  data: {
+    imageUrl?: string;
+    prompt: string;
+    isLoading?: boolean;
+    x?: number;
+    y?: number;
+  }
+) {
+  const id = createShapeId();
+  editor.createShapes([
+    {
+      id,
+      type: "image-card",
+      x: data.x ?? 100,
+      y: data.y ?? 100,
+      props: {
+        w: 500,
+        h: 500,
+        imageUrl: data.imageUrl || "",
+        prompt: data.prompt,
+        isLoading: data.isLoading ?? true,
+        timestamp: Date.now(),
+      },
+    },
+  ]);
+  return id;
+}
+
+// 更新图片卡片
+export function updateImageCard(
+  editor: Editor,
+  cardId: string,
+  imageUrl: string,
+  isLoading: boolean = false
+) {
+  const shape = editor.getShape(cardId as any);
+  if (!shape) {
+    console.error("Shape not found:", cardId);
+    return;
+  }
+
+  editor.updateShapes([
+    {
+      id: cardId as any,
+      type: "image-card",
+      props: {
+        ...shape.props,
+        imageUrl,
+        isLoading,
+      },
+    },
+  ]);
+}
+
+// 创建视频卡片
+export function createVideoCard(
+  editor: Editor,
+  data: {
+    videoUrl?: string;
+    prompt: string;
+    isLoading?: boolean;
+    taskId?: string;
+    progress?: string;
+    x?: number;
+    y?: number;
+  }
+) {
+  const id = createShapeId();
+  editor.createShapes([
+    {
+      id,
+      type: "video-card",
+      x: data.x ?? 100,
+      y: data.y ?? 100,
+      props: {
+        w: 640,
+        h: 400,
+        videoUrl: data.videoUrl || "",
+        prompt: data.prompt,
+        isLoading: data.isLoading ?? true,
+        taskId: data.taskId,
+        progress: data.progress,
+        timestamp: Date.now(),
+      },
+    },
+  ]);
+  return id;
+}
+
+// 更新视频卡片
+export function updateVideoCard(
+  editor: Editor,
+  cardId: string,
+  updates: {
+    videoUrl?: string;
+    isLoading?: boolean;
+    progress?: string;
+  }
+) {
+  const shape = editor.getShape(cardId as any);
+  if (!shape) {
+    console.error("Shape not found:", cardId);
+    return;
+  }
+
+  editor.updateShapes([
+    {
+      id: cardId as any,
+      type: "video-card",
+      props: {
+        ...shape.props,
+        ...updates,
+      },
+    },
+  ]);
+}
+
 // 导出所有helpers
 export const cardHelpers = {
   createConversationCard,
@@ -167,4 +289,8 @@ export const cardHelpers = {
   createSearchResultCard,
   createNoteCard,
   createClusterCard,
+  createImageCard,
+  updateImageCard,
+  createVideoCard,
+  updateVideoCard,
 };

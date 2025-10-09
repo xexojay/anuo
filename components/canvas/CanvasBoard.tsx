@@ -7,6 +7,8 @@ import {
   SearchResultCardUtil,
   NoteCardUtil,
   ClusterCardUtil,
+  ImageCardUtil,
+  VideoCardUtil,
 } from "./shapes";
 import { useEditorContext } from "./EditorContext";
 import { useParams } from "next/navigation";
@@ -18,6 +20,8 @@ const customShapeUtils = [
   SearchResultCardUtil,
   NoteCardUtil,
   ClusterCardUtil,
+  ImageCardUtil,
+  VideoCardUtil,
 ];
 
 export default function CanvasBoard() {
