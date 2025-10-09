@@ -68,7 +68,9 @@ export class ConversationCardUtil extends ShapeUtil<ConversationCardShape> {
     const colors = [
       { name: "白色", value: "white", border: "#e5e7eb", bg: "#ffffff" },
       { name: "红色", value: "red", border: "#fca5a5", bg: "#fef2f2" },
+      { name: "橙色", value: "orange", border: "#fdba74", bg: "#fff7ed" },
       { name: "黄色", value: "yellow", border: "#fde047", bg: "#fefce8" },
+      { name: "淡绿色", value: "light-green", border: "#bbf7d0", bg: "#f0fdf4" },
       { name: "绿色", value: "green", border: "#86efac", bg: "#f0fdf4" },
       { name: "青色", value: "cyan", border: "#67e8f9", bg: "#ecfeff" },
       { name: "蓝色", value: "blue", border: "#60a5fa", bg: "#eff6ff" },
