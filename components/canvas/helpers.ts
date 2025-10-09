@@ -110,6 +110,7 @@ export function createConversationCard(
     userMessage: string;
     aiResponse?: string;
     isLoading?: boolean;
+    modelName?: string;
     x?: number;
     y?: number;
   }
@@ -130,6 +131,7 @@ export function createConversationCard(
         timestamp: Date.now(),
         themeColor: "blue",
         showColorPicker: false,
+        modelName: data.modelName,
       },
     },
   ]);

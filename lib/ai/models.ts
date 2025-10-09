@@ -70,6 +70,14 @@ export const MODELS: ModelConfig[] = [
     type: "text",
     description: "DeepSeek对话模型",
   },
+  {
+    id: "grok-4",
+    name: "Grok 4",
+    model: "grok-4",
+    baseUrl: "https://api.tu-zi.com",
+    type: "text",
+    description: "xAI最新对话模型，256K上下文",
+  },
 ];
 
 /**

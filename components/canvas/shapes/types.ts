@@ -12,6 +12,7 @@ export type ConversationCardShape = TLBaseShape<
     timestamp: number;
     themeColor: string; // 主题颜色
     showColorPicker: boolean; // 颜色选择器显示状态
+    modelName?: string; // 使用的模型名称
   }
 >;
 

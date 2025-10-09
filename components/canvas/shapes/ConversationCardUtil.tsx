@@ -23,6 +23,7 @@ export class ConversationCardUtil extends ShapeUtil<ConversationCardShape> {
       timestamp: Date.now(),
       themeColor: "blue",
       showColorPicker: false,
+      modelName: undefined,
     };
   }
 
@@ -57,7 +58,7 @@ export class ConversationCardUtil extends ShapeUtil<ConversationCardShape> {
   }
 
   component(shape: ConversationCardShape) {
-    const { w, h, userMessage, aiResponse, isLoading, themeColor } = shape.props;
+    const { w, h, userMessage, aiResponse, isLoading, themeColor, modelName } = shape.props;
     const contentRef = useRef<HTMLDivElement>(null);
     const editor = useEditor();
 
@@ -123,6 +124,7 @@ export class ConversationCardUtil extends ShapeUtil<ConversationCardShape> {
           {/* 用户提问 */}
           <div className="px-6 pt-4 pb-2">
             <p className="text-base font-medium text-gray-900 dark:text-gray-100 whitespace-pre-wrap break-words">
+              {modelName && <span className="text-blue-600 dark:text-blue-400">@{modelName} </span>}
               {userMessage || "用户提问"}
             </p>
           </div>

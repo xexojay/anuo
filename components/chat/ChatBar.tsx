@@ -70,6 +70,7 @@ export default function ChatBar() {
     const cardId = cardHelpers.createConversationCard(editor, {
       userMessage,
       isLoading: true,
+      modelName: selectedModel.name,
       x: 100,
       y: 100,
     });
@@ -149,31 +150,8 @@ export default function ChatBar() {
         editor.select(videoCardId);
         editor.zoomToSelection({ animation: { duration: 400 } });
       }
-      // 处理搜索结果（如果是搜索）
-      else if (data.intent === "search" && data.results && data.results.length > 0) {
-        // 先删除对话卡片
-        editor.deleteShape(cardId as any);
-
-        // 创建搜索结果卡片
-        let x = 100;
-        let y = 100;
-
-        data.results.forEach((result: any, index: number) => {
-          if (result.title && result.snippet) {
-            cardHelpers.createSearchResultCard(editor, {
-              title: result.title,
-              snippet: result.snippet,
-              source: result.source || "google",
-              url: result.url,
-              x: x + index * 340,
-              y,
-            });
-          }
-        });
-
-        editor.zoomToFit({ animation: { duration: 400 } });
-      } else {
-        // AI对话或图片识别 - 更新对话卡片
+      // AI对话或图片识别 - 更新对话卡片
+      else {
         const aiResponse = data.results?.[0]?.content || data.message || "无响应";
         cardHelpers.updateConversationCard(editor, cardId, aiResponse, false);
         editor.select(cardId);
@@ -258,7 +236,7 @@ export default function ChatBar() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="搜索Twitter、Google，或询问AI..."
+              placeholder="询问AI..."
               className="flex-1 bg-transparent text-gray-900 dark:text-gray-100 text-sm focus:outline-none disabled:opacity-50 placeholder:text-gray-400"
               disabled={isLoading}
             />
