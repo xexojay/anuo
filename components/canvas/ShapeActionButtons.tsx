@@ -63,7 +63,8 @@ export default function ShapeActionButtons() {
  */
 function ConversationCardButtons({ shape, topLeft, topRight }: { shape: ConversationCardShape; topLeft: any; topRight: any }) {
   const editor = useEditor();
-  const { themeColor, showColorPicker, userMessage } = shape.props;
+  const toasts = useToasts();
+  const { themeColor, showColorPicker, userMessage, aiResponse } = shape.props;
 
   // 预置颜色
   const colors = [
@@ -186,6 +187,29 @@ function ConversationCardButtons({ shape, topLeft, topRight }: { shape: Conversa
     ]);
   };
 
+  const handleCopyResponse = async () => {
+    try {
+      await navigator.clipboard.writeText(aiResponse);
+
+      console.log("✅ AI回复已复制到剪贴板");
+
+      // 显示成功提示
+      toasts.addToast({
+        title: "复制成功",
+        severity: "success",
+      });
+    } catch (error) {
+      console.error("复制AI回复失败:", error);
+
+      // 显示错误提示
+      toasts.addToast({
+        title: "复制失败",
+        description: "请重试",
+        severity: "error",
+      });
+    }
+  };
+
   return (
     <>
       {/* 顶部左侧按钮 */}
@@ -234,6 +258,25 @@ function ConversationCardButtons({ shape, topLeft, topRight }: { shape: Conversa
               ))}
             </div>
           )}
+        </div>
+
+        {/* 复制回复按钮 */}
+        <div className="relative group">
+          <button
+            onClick={handleCopyResponse}
+            disabled={!aiResponse || shape.props.isLoading}
+            className="w-8 h-8 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-center text-gray-600 dark:text-gray-400 disabled:opacity-50"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+          </button>
+
+          {/* Tooltip */}
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap">
+            复制回复
+          </div>
         </div>
 
         {/* 重置大小按钮 */}
