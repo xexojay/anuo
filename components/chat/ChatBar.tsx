@@ -15,12 +15,17 @@ export default function ChatBar() {
   const [selectedModel, setSelectedModel] = useState<ModelConfig>(getDefaultModel());
   const { editor } = useEditorContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // 处理模型切换
   const handleModelChange = (model: ModelConfig) => {
     setSelectedModel(model);
     // 在输入框插入 @模型名称
     setInput(`@${model.name} `);
+    // 自动聚焦到输入框
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 0);
   };
 
   // 处理图片上传
@@ -233,6 +238,7 @@ export default function ChatBar() {
 
             {/* 输入框 */}
             <input
+              ref={inputRef}
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}

@@ -221,6 +221,62 @@ export async function generateImage(
 }
 
 /**
+ * 图片编辑（图生图）
+ * 使用上传的图片 + 提示词生成新图片
+ */
+export async function editImage(
+  imageBase64: string,
+  prompt: string,
+  model: string = "nano-banana",
+  baseUrl: string = TUZI_BASE_URL
+) {
+  try {
+    // 将 base64 转换为 Blob
+    const base64Data = imageBase64.split(',')[1] || imageBase64;
+    const byteCharacters = atob(base64Data);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: 'image/png' });
+
+    // 构建 FormData
+    const formData = new FormData();
+    formData.append('image', blob, 'image.png');
+    formData.append('prompt', prompt);
+    formData.append('model', model);
+    formData.append('n', '1');
+    formData.append('size', '1024x1024');
+
+    const response = await fetch(`${baseUrl}/v1/images/edits`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${TUZI_API_KEY}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`图片编辑API错误: ${response.status} - ${error}`);
+    }
+
+    const data = await response.json();
+
+    // 返回图片URL
+    if (data.data && data.data.length > 0) {
+      return data.data[0].url;
+    }
+
+    throw new Error("未能编辑图片");
+  } catch (error) {
+    console.error("图片编辑失败:", error);
+    throw error;
+  }
+}
+
+/**
  * 视频生成（异步）- 提交任务
  */
 export async function generateVideoTask(

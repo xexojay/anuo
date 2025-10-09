@@ -3,6 +3,7 @@ import {
   chatWithText,
   chatWithTextAndImages,
   generateImage,
+  editImage,
   generateVideoTask,
   pollVideoTask,
   tuzuChat,
@@ -14,10 +15,20 @@ export async function POST(req: NextRequest) {
   try {
     const { message, images, model, baseUrl, modelType } = await req.json();
 
-    // 处理图片生成
+    // 处理图片生成/编辑
     if (modelType === "image") {
       try {
-        const imageUrl = await generateImage(message, model, baseUrl);
+        let imageUrl: string;
+
+        // 如果有上传图片，进行图片编辑（图生图）
+        if (images && images.length > 0) {
+          // 使用第一张图片进行编辑
+          imageUrl = await editImage(images[0], message, model, baseUrl);
+        } else {
+          // 纯文生图
+          imageUrl = await generateImage(message, model, baseUrl);
+        }
+
         return NextResponse.json({
           intent: "image_generation",
           results: [
@@ -27,12 +38,12 @@ export async function POST(req: NextRequest) {
               prompt: message,
             },
           ],
-          message: "图片生成成功",
+          message: images && images.length > 0 ? "图片编辑成功" : "图片生成成功",
         });
       } catch (error) {
-        console.error("图片生成失败:", error);
+        console.error("图片处理失败:", error);
         return NextResponse.json(
-          { error: "图片生成失败" },
+          { error: images && images.length > 0 ? "图片编辑失败" : "图片生成失败" },
           { status: 500 }
         );
       }
