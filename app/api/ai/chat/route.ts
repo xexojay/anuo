@@ -10,7 +10,8 @@ import {
   tuzuChat,
 } from "@/lib/ai/tuzi";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
+export const maxDuration = 60; // Vercel Hobby 计划最大 60 秒
 
 export async function POST(req: NextRequest) {
   try {
