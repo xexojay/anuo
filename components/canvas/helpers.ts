@@ -143,9 +143,10 @@ export function updateConversationCard(
   editor: Editor,
   cardId: string,
   aiResponse: string,
-  isLoading: boolean = false
+  isLoading: boolean = false,
+  references?: any[]
 ) {
-  const shape = editor.getShape(cardId as any);
+  const shape = editor.getShape(cardId as any) as ConversationCardShape | undefined;
   if (!shape) {
     console.error("Shape not found:", cardId);
     return;
@@ -159,6 +160,7 @@ export function updateConversationCard(
         ...shape.props,
         aiResponse,
         isLoading,
+        references: references !== undefined ? references : (shape.props.references || []),
       },
     },
   ]);

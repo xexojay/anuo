@@ -5,6 +5,7 @@ import {
   generateImage,
   editImage,
   generateVideoTask,
+  generateVideoFromImage,
   pollVideoTask,
   tuzuChat,
 } from "@/lib/ai/tuzi";
@@ -13,7 +14,7 @@ export const runtime = "edge";
 
 export async function POST(req: NextRequest) {
   try {
-    const { message, images, model, baseUrl, modelType } = await req.json();
+    const { message, images, selectedCards, model, baseUrl, modelType } = await req.json();
 
     // 处理图片生成/编辑
     if (modelType === "image") {
@@ -49,10 +50,20 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 处理视频生成
+    // 处理视频生成/图生视频
     if (modelType === "video") {
       try {
-        const task = await generateVideoTask(message, model, baseUrl);
+        let task;
+
+        // 如果有上传图片，进行图生视频
+        if (images && images.length > 0) {
+          // 使用第一张图片生成视频
+          task = await generateVideoFromImage(images[0], message, model, baseUrl);
+        } else {
+          // 纯文生视频
+          task = await generateVideoTask(message, model, baseUrl);
+        }
+
         return NextResponse.json({
           intent: "video_generation",
           results: [
@@ -63,12 +74,12 @@ export async function POST(req: NextRequest) {
               prompt: message,
             },
           ],
-          message: "视频生成任务已提交",
+          message: images && images.length > 0 ? "图生视频任务已提交" : "视频生成任务已提交",
         });
       } catch (error) {
-        console.error("视频生成失败:", error);
+        console.error("视频处理失败:", error);
         return NextResponse.json(
-          { error: "视频生成失败" },
+          { error: images && images.length > 0 ? "图生视频失败" : "视频生成失败" },
           { status: 500 }
         );
       }
@@ -76,7 +87,36 @@ export async function POST(req: NextRequest) {
 
     // 如果有图片，使用AI处理图片+文字
     if (images && images.length > 0) {
-      const aiResponse = await chatWithTextAndImages(message, images);
+      // 构建包含引用卡片的上下文消息
+      let contextMessage = message;
+      const references: any[] = [];
+
+      if (selectedCards && selectedCards.length > 0) {
+        let referencesContext = "\n\n参考以下内容：\n";
+
+        selectedCards.forEach((card: any, index: number) => {
+          const refNum = index + 1;
+          references.push({
+            type: card.type,
+            index: refNum,
+            cardId: card.id
+          });
+
+          if (card.type === "conversation") {
+            referencesContext += `\n[对话 #${refNum}]\n问题：${card.title}\n回答：${card.content}\n`;
+          } else if (card.type === "image") {
+            referencesContext += `\n[图片 #${refNum}]\n提示词：${card.prompt || card.title}\n`;
+          } else if (card.type === "video") {
+            referencesContext += `\n[视频 #${refNum}]\n提示词：${card.prompt || card.title}\n`;
+          } else if (card.type === "search-result") {
+            referencesContext += `\n[搜索结果 #${refNum}]\n${card.title}\n${card.content || ""}\n`;
+          }
+        });
+
+        contextMessage = referencesContext + "\n\n用户问题：" + message;
+      }
+
+      const aiResponse = await chatWithTextAndImages(contextMessage, images);
 
       return NextResponse.json({
         intent: "ai_vision",
@@ -87,14 +127,44 @@ export async function POST(req: NextRequest) {
           },
         ],
         message: aiResponse,
+        references: references.length > 0 ? references : undefined,
       });
     }
 
     // AI对话 - 使用指定的模型和baseUrl
+    // 构建包含引用卡片的上下文消息
+    let contextMessage = message;
+    const references: any[] = [];
+
+    if (selectedCards && selectedCards.length > 0) {
+      let referencesContext = "\n\n参考以下内容：\n";
+
+      selectedCards.forEach((card: any, index: number) => {
+        const refNum = index + 1;
+        references.push({
+          type: card.type,
+          index: refNum,
+          cardId: card.id
+        });
+
+        if (card.type === "conversation") {
+          referencesContext += `\n[对话 #${refNum}]\n问题：${card.title}\n回答：${card.content}\n`;
+        } else if (card.type === "image") {
+          referencesContext += `\n[图片 #${refNum}]\n提示词：${card.prompt || card.title}\n`;
+        } else if (card.type === "video") {
+          referencesContext += `\n[视频 #${refNum}]\n提示词：${card.prompt || card.title}\n`;
+        } else if (card.type === "search-result") {
+          referencesContext += `\n[搜索结果 #${refNum}]\n${card.title}\n${card.content || ""}\n`;
+        }
+      });
+
+      contextMessage = referencesContext + "\n\n用户问题：" + message;
+    }
+
     const messages = [
       {
         role: "user" as const,
-        content: message,
+        content: contextMessage,
       },
     ];
     const response = await tuzuChat(messages, { model }, baseUrl);
@@ -119,6 +189,7 @@ export async function POST(req: NextRequest) {
         },
       ],
       message: aiResponse,
+      references: references.length > 0 ? references : undefined,
     });
   } catch (error) {
     console.error("Error in AI chat:", error);

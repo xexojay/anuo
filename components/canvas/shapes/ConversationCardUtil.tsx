@@ -60,9 +60,20 @@ export class ConversationCardUtil extends ShapeUtil<ConversationCardShape> {
   }
 
   component(shape: ConversationCardShape) {
-    const { w, h, userMessage, aiResponse, isLoading, themeColor, modelName } = shape.props;
+    const { w, h, userMessage, aiResponse, isLoading, themeColor, modelName, references } = shape.props;
     const contentRef = useRef<HTMLDivElement>(null);
     const editor = useEditor();
+
+    // 获取引用类型图标和文字
+    const getReferenceLabel = (type: string, index: number) => {
+      switch (type) {
+        case "conversation": return { icon: "💬", label: `对话 #${index}` };
+        case "image": return { icon: "🖼️", label: `图片 #${index}` };
+        case "video": return { icon: "🎬", label: `视频 #${index}` };
+        case "search-result": return { icon: "🔍", label: `搜索 #${index}` };
+        default: return { icon: "📎", label: `引用 #${index}` };
+      }
+    };
 
     // 预置颜色
     const colors = [
@@ -159,8 +170,8 @@ export class ConversationCardUtil extends ShapeUtil<ConversationCardShape> {
                     // 段落样式
                     p: ({node, ...props}) => <p className="mb-2" {...props} />,
                     // 代码块样式
-                    code: ({node, inline, ...props}) =>
-                      inline ? (
+                    code: ({node, ...props}: any) =>
+                      props.inline ? (
                         <code className="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-sm font-mono" {...props} />
                       ) : (
                         <code className="block bg-gray-100 dark:bg-gray-700 p-3 rounded my-2 overflow-x-auto text-sm font-mono" {...props} />
@@ -187,6 +198,27 @@ export class ConversationCardUtil extends ShapeUtil<ConversationCardShape> {
               </div>
             )}
           </div>
+
+          {/* 引用标记 - 显示在卡片底部 */}
+          {references && references.length > 0 && (
+            <div className="px-6 pb-3 pt-2 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs text-gray-500 dark:text-gray-400">📎 引用：</span>
+                {references.map((ref) => {
+                  const refLabel = getReferenceLabel(ref.type, ref.index);
+                  return (
+                    <span
+                      key={ref.cardId}
+                      className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded text-xs"
+                    >
+                      <span>{refLabel.icon}</span>
+                      <span>{refLabel.label}</span>
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </HTMLContainer>
     );

@@ -1,5 +1,23 @@
 import { TLBaseShape, TLDefaultColorStyle } from "tldraw";
 
+// 选中卡片引用类型
+export type SelectedCardReference = {
+  id: string;
+  type: "conversation" | "image" | "video" | "search-result";
+  title: string; // 显示的标题
+  content?: string; // 内容摘要
+  imageUrl?: string; // 图片URL
+  videoUrl?: string; // 视频URL
+  prompt?: string; // 提示词
+};
+
+// 卡片引用标记类型
+export type CardReference = {
+  type: "conversation" | "image" | "video" | "search-result";
+  index: number; // 引用序号
+  cardId: string; // 原始卡片ID
+};
+
 // 对话卡片类型（新）
 export type ConversationCardShape = TLBaseShape<
   "conversation-card",
@@ -13,6 +31,7 @@ export type ConversationCardShape = TLBaseShape<
     themeColor: string; // 主题颜色
     showColorPicker: boolean; // 颜色选择器显示状态
     modelName?: string; // 使用的模型名称
+    references?: CardReference[]; // 引用的卡片
   }
 >;
 

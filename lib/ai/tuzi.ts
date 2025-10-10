@@ -144,25 +144,43 @@ export async function chatWithTextAndImages(
   text: string,
   imageUrls: string[]
 ) {
-  const contentParts: TuziMessageContent[] = [
+  // 使用 Claude 官方格式：content 为数组
+  const contentParts: any[] = [
     {
       type: "text",
-      text,
+      text: text,
     },
   ];
 
-  // 添加所有图片
+  // 添加图片
   imageUrls.forEach((url) => {
+    // 解析 base64 数据和 media_type
+    let base64Data = url;
+    let mediaType = "image/jpeg";
+
+    // 如果是 data URL 格式，提取 media type 和纯 base64
+    if (url.startsWith("data:")) {
+      const match = url.match(/^data:(image\/[^;]+);base64,(.+)$/);
+      if (match) {
+        mediaType = match[1];  // image/jpeg, image/png, etc.
+        base64Data = match[2]; // 纯 base64
+      }
+    }
+
     contentParts.push({
-      type: "image_url",
-      image_url: { url },
+      type: "image",
+      source: {
+        type: "base64",
+        media_type: mediaType,
+        data: base64Data,
+      },
     });
   });
 
   const messages: TuziMessage[] = [
     {
       role: "user",
-      content: contentParts,
+      content: contentParts as any,
     },
   ];
 
@@ -277,7 +295,7 @@ export async function editImage(
 }
 
 /**
- * 视频生成（异步）- 提交任务
+ * 视频生成（异步）- 提交任务（文生视频）
  */
 export async function generateVideoTask(
   prompt: string,
@@ -321,6 +339,74 @@ export async function generateVideoTask(
     throw new Error("视频任务提交失败");
   } catch (error) {
     console.error("视频生成任务提交失败:", error);
+    throw error;
+  }
+}
+
+/**
+ * 图生视频（异步）- 提交任务
+ * 使用上传的图片 + 提示词生成视频
+ */
+export async function generateVideoFromImage(
+  imageBase64: string,
+  prompt: string,
+  model: string = "sora-2",
+  baseUrl: string = "https://asyncdata.net/tran/https://api.tu-zi.com"
+) {
+  try {
+    // 确保 base64 格式正确（包含 data:image 前缀）
+    const formattedImage = imageBase64.startsWith('data:')
+      ? imageBase64
+      : `data:image/png;base64,${imageBase64}`;
+
+    // 使用类似文生视频的 JSON 格式，但添加图片
+    const response = await fetch(`${baseUrl}/v1/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${TUZI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "image_url",
+                image_url: {
+                  url: formattedImage,
+                },
+              },
+              {
+                type: "text",
+                text: prompt,
+              },
+            ],
+          },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`图生视频任务提交失败: ${response.status} - ${error}`);
+    }
+
+    const data = await response.json();
+
+    // 返回任务信息（与文生视频保持一致的格式）
+    if (data.id && data.preview_url) {
+      return {
+        taskId: data.id,
+        previewUrl: data.preview_url,
+        sourceUrl: data.source_url,
+      };
+    }
+
+    throw new Error("图生视频任务提交失败");
+  } catch (error) {
+    console.error("图生视频任务提交失败:", error);
     throw error;
   }
 }
