@@ -144,8 +144,8 @@ export default function ChatBar() {
           cards.push({
             id: card.id,
             type: "conversation",
-            title: card.props.userMessage.slice(0, 30) + (card.props.userMessage.length > 30 ? "..." : ""),
-            content: card.props.aiResponse.slice(0, 50) + (card.props.aiResponse.length > 50 ? "..." : ""),
+            title: card.props.userMessage,  // 传递完整用户提问
+            content: card.props.aiResponse,  // 传递完整AI回答
           });
         } else if (shape.type === "image-card") {
           const card = shape as ImageCardShape;
@@ -359,7 +359,7 @@ export default function ChatBar() {
         cardHelpers.updateConversationCard(editor, cardId, "", true);
       }
 
-      // 调用AI API
+      // 调用AI API（包含图片和引用卡片）
       const response = await fetch("/api/ai/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -512,7 +512,11 @@ export default function ChatBar() {
             <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
               <span>📎 已选中:</span>
               <span className="flex-1 truncate">
-                {selectedCards.map((card) => card.title).join(", ")}
+                {selectedCards.map((card) => {
+                  // UI显示时截断，避免过长
+                  const displayTitle = card.title.slice(0, 30) + (card.title.length > 30 ? "..." : "");
+                  return displayTitle;
+                }).join(", ")}
               </span>
               <span className="text-blue-600 dark:text-blue-400 font-medium">
                 {selectedCards.length} 个

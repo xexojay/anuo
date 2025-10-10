@@ -212,6 +212,29 @@ function ConversationCardButtons({ shape, topLeft, topRight }: { shape: Conversa
     }
   };
 
+  const handleCopyPrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(userMessage);
+
+      console.log("✅ 用户提问已复制到剪贴板");
+
+      // 显示成功提示
+      toasts.addToast({
+        title: "复制成功",
+        severity: "success",
+      });
+    } catch (error) {
+      console.error("复制用户提问失败:", error);
+
+      // 显示错误提示
+      toasts.addToast({
+        title: "复制失败",
+        description: "请重试",
+        severity: "error",
+      });
+    }
+  };
+
   return (
     <>
       {/* 顶部左侧按钮 */}
@@ -319,30 +342,52 @@ function ConversationCardButtons({ shape, topLeft, topRight }: { shape: Conversa
         </div>
       </div>
 
-      {/* 右侧顶部重新生成按钮 */}
+      {/* 右侧顶部按钮组 - 垂直排列 */}
       <div
-        className="absolute bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-1 z-[9999] group"
+        className="absolute flex flex-col gap-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-1 z-[9999]"
         style={{
           left: `${topRight.x + 8}px`,
           top: `${topRight.y}px`,
           pointerEvents: 'auto',
         }}
       >
-        <button
-          onClick={handleRegenerate}
-          disabled={shape.props.isLoading}
-          className="w-8 h-8 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-center text-gray-600 dark:text-gray-400 disabled:opacity-50"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={shape.props.isLoading ? "animate-spin" : ""}>
-            <polyline points="23 4 23 10 17 10"></polyline>
-            <polyline points="1 20 1 14 7 14"></polyline>
-            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-          </svg>
-        </button>
+        {/* 重新生成按钮 */}
+        <div className="relative group">
+          <button
+            onClick={handleRegenerate}
+            disabled={shape.props.isLoading}
+            className="w-8 h-8 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-center text-gray-600 dark:text-gray-400 disabled:opacity-50"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={shape.props.isLoading ? "animate-spin" : ""}>
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <polyline points="1 20 1 14 7 14"></polyline>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg>
+          </button>
 
-        {/* Tooltip */}
-        <div className="absolute top-1/2 -translate-y-1/2 left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap">
-          重新生成
+          {/* Tooltip */}
+          <div className="absolute top-1/2 -translate-y-1/2 left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap">
+            重新生成
+          </div>
+        </div>
+
+        {/* 复制提问按钮 */}
+        <div className="relative group">
+          <button
+            onClick={handleCopyPrompt}
+            disabled={!userMessage}
+            className="w-8 h-8 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-center text-gray-600 dark:text-gray-400 disabled:opacity-50"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+          </button>
+
+          {/* Tooltip */}
+          <div className="absolute top-1/2 -translate-y-1/2 left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap">
+            复制提问
+          </div>
         </div>
       </div>
     </>
@@ -359,6 +404,29 @@ function ImageCardButtons({ shape, topLeft, topRight }: { shape: ImageCardShape;
   const handleDelete = () => {
     if (confirm("确定要删除这张图片吗？")) {
       editor.deleteShape(shape.id);
+    }
+  };
+
+  const handleCopyPrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(shape.props.prompt);
+
+      console.log("✅ 图片提示词已复制到剪贴板");
+
+      // 显示成功提示
+      toasts.addToast({
+        title: "复制成功",
+        severity: "success",
+      });
+    } catch (error) {
+      console.error("复制提示词失败:", error);
+
+      // 显示错误提示
+      toasts.addToast({
+        title: "复制失败",
+        description: "请重试",
+        severity: "error",
+      });
     }
   };
 
@@ -553,30 +621,52 @@ function ImageCardButtons({ shape, topLeft, topRight }: { shape: ImageCardShape;
         </div>
       </div>
 
-      {/* 右侧顶部重新生成按钮 */}
+      {/* 右侧顶部按钮组 - 垂直排列 */}
       <div
-        className="absolute bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-1 z-[9999] group"
+        className="absolute flex flex-col gap-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-1 z-[9999]"
         style={{
           left: `${topRight.x + 8}px`,
           top: `${topRight.y}px`,
           pointerEvents: 'auto',
         }}
       >
-        <button
-          onClick={handleRegenerate}
-          disabled={shape.props.isLoading}
-          className="w-8 h-8 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-center text-gray-600 dark:text-gray-400 disabled:opacity-50"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={shape.props.isLoading ? "animate-spin" : ""}>
-            <polyline points="23 4 23 10 17 10"></polyline>
-            <polyline points="1 20 1 14 7 14"></polyline>
-            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-          </svg>
-        </button>
+        {/* 重新生成按钮 */}
+        <div className="relative group">
+          <button
+            onClick={handleRegenerate}
+            disabled={shape.props.isLoading}
+            className="w-8 h-8 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-center text-gray-600 dark:text-gray-400 disabled:opacity-50"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={shape.props.isLoading ? "animate-spin" : ""}>
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <polyline points="1 20 1 14 7 14"></polyline>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg>
+          </button>
 
-        {/* Tooltip */}
-        <div className="absolute top-1/2 -translate-y-1/2 left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap">
-          重新生成
+          {/* Tooltip */}
+          <div className="absolute top-1/2 -translate-y-1/2 left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap">
+            重新生成
+          </div>
+        </div>
+
+        {/* 复制提示词按钮 */}
+        <div className="relative group">
+          <button
+            onClick={handleCopyPrompt}
+            disabled={!shape.props.prompt}
+            className="w-8 h-8 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-center text-gray-600 dark:text-gray-400 disabled:opacity-50"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+          </button>
+
+          {/* Tooltip */}
+          <div className="absolute top-1/2 -translate-y-1/2 left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap">
+            复制提示词
+          </div>
         </div>
       </div>
     </>
@@ -588,10 +678,34 @@ function ImageCardButtons({ shape, topLeft, topRight }: { shape: ImageCardShape;
  */
 function VideoCardButtons({ shape, topLeft, topRight }: { shape: VideoCardShape; topLeft: any; topRight: any }) {
   const editor = useEditor();
+  const toasts = useToasts();
 
   const handleDelete = () => {
     if (confirm("确定要删除这个视频吗？")) {
       editor.deleteShape(shape.id);
+    }
+  };
+
+  const handleCopyPrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(shape.props.prompt);
+
+      console.log("✅ 视频提示词已复制到剪贴板");
+
+      // 显示成功提示
+      toasts.addToast({
+        title: "复制成功",
+        severity: "success",
+      });
+    } catch (error) {
+      console.error("复制提示词失败:", error);
+
+      // 显示错误提示
+      toasts.addToast({
+        title: "复制失败",
+        description: "请重试",
+        severity: "error",
+      });
     }
   };
 
@@ -697,30 +811,52 @@ function VideoCardButtons({ shape, topLeft, topRight }: { shape: VideoCardShape;
         </div>
       </div>
 
-      {/* 右侧顶部重新生成按钮 */}
+      {/* 右侧顶部按钮组 - 垂直排列 */}
       <div
-        className="absolute bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-1 z-[9999] group"
+        className="absolute flex flex-col gap-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-1 z-[9999]"
         style={{
           left: `${topRight.x + 8}px`,
           top: `${topRight.y}px`,
           pointerEvents: 'auto',
         }}
       >
-        <button
-          onClick={handleRegenerate}
-          disabled={shape.props.isLoading}
-          className="w-8 h-8 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-center text-gray-600 dark:text-gray-400 disabled:opacity-50"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={shape.props.isLoading ? "animate-spin" : ""}>
-            <polyline points="23 4 23 10 17 10"></polyline>
-            <polyline points="1 20 1 14 7 14"></polyline>
-            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
-          </svg>
-        </button>
+        {/* 重新生成按钮 */}
+        <div className="relative group">
+          <button
+            onClick={handleRegenerate}
+            disabled={shape.props.isLoading}
+            className="w-8 h-8 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-center text-gray-600 dark:text-gray-400 disabled:opacity-50"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={shape.props.isLoading ? "animate-spin" : ""}>
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <polyline points="1 20 1 14 7 14"></polyline>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg>
+          </button>
 
-        {/* Tooltip */}
-        <div className="absolute top-1/2 -translate-y-1/2 left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap">
-          重新生成
+          {/* Tooltip */}
+          <div className="absolute top-1/2 -translate-y-1/2 left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap">
+            重新生成
+          </div>
+        </div>
+
+        {/* 复制提示词按钮 */}
+        <div className="relative group">
+          <button
+            onClick={handleCopyPrompt}
+            disabled={!shape.props.prompt}
+            className="w-8 h-8 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-center text-gray-600 dark:text-gray-400 disabled:opacity-50"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+          </button>
+
+          {/* Tooltip */}
+          <div className="absolute top-1/2 -translate-y-1/2 left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap">
+            复制提示词
+          </div>
         </div>
       </div>
     </>

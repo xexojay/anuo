@@ -149,76 +149,83 @@ export class ConversationCardUtil extends ShapeUtil<ConversationCardShape> {
             <div className="border-t border-gray-200 dark:border-gray-700"></div>
           </div>
 
-          {/* AI回答 - 完整显示，占据剩余空间 */}
-          <div className="px-6 pt-2 pb-4 flex-1 flex items-start">
-            {isLoading ? (
-              <div className="flex items-center gap-2 text-gray-500">
-                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10" strokeDasharray="60" strokeDashoffset="30"></circle>
-                </svg>
-                <span>生成中...</span>
-              </div>
-            ) : (
-              <div className="text-base text-gray-800 dark:text-gray-200 leading-relaxed markdown-content">
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={{
-                    // 标题样式
-                    h1: ({node, ...props}) => <h1 className="text-2xl font-bold mt-4 mb-2" {...props} />,
-                    h2: ({node, ...props}) => <h2 className="text-xl font-bold mt-3 mb-2" {...props} />,
-                    h3: ({node, ...props}) => <h3 className="text-lg font-bold mt-2 mb-1" {...props} />,
-                    // 段落样式
-                    p: ({node, ...props}) => <p className="mb-2" {...props} />,
-                    // 代码块样式
-                    code: ({node, ...props}: any) =>
-                      props.inline ? (
-                        <code className="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-sm font-mono" {...props} />
-                      ) : (
-                        <code className="block bg-gray-100 dark:bg-gray-700 p-3 rounded my-2 overflow-x-auto text-sm font-mono" {...props} />
-                      ),
-                    // 链接样式
-                    a: ({node, ...props}) => <a className="text-blue-600 dark:text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer" {...props} />,
-                    // 列表样式
-                    ul: ({node, ...props}) => <ul className="list-disc list-inside mb-2 space-y-1" {...props} />,
-                    ol: ({node, ...props}) => <ol className="list-decimal list-inside mb-2 space-y-1" {...props} />,
-                    li: ({node, ...props}) => <li className="ml-2" {...props} />,
-                    // 引用块样式
-                    blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-gray-300 dark:border-gray-600 pl-4 italic my-2" {...props} />,
-                    // 表格样式
-                    table: ({node, ...props}) => <table className="border-collapse border border-gray-300 dark:border-gray-600 my-2" {...props} />,
-                    th: ({node, ...props}) => <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 bg-gray-100 dark:bg-gray-700 font-semibold" {...props} />,
-                    td: ({node, ...props}) => <td className="border border-gray-300 dark:border-gray-600 px-3 py-2" {...props} />,
-                    // 强调样式
-                    strong: ({node, ...props}) => <strong className="font-bold" {...props} />,
-                    em: ({node, ...props}) => <em className="italic" {...props} />,
-                  }}
-                >
-                  {aiResponse || "等待AI回复..."}
-                </ReactMarkdown>
-              </div>
-            )}
-          </div>
-
-          {/* 引用标记 - 显示在卡片底部 */}
+          {/* Source 区域 - 显示引用信息 */}
           {references && references.length > 0 && (
-            <div className="px-6 pb-3 pt-2 border-t border-gray-200 dark:border-gray-700">
+            <div className="px-6 pt-3 pb-2 bg-gray-50 dark:bg-gray-800/50">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs text-gray-500 dark:text-gray-400">📎 引用：</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">📎 引用：</span>
                 {references.map((ref) => {
                   const refLabel = getReferenceLabel(ref.type, ref.index);
                   return (
-                    <span
+                    <button
                       key={ref.cardId}
-                      className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded text-xs"
+                      onClick={() => {
+                        editor.select(ref.cardId as any);
+                        editor.zoomToSelection({ animation: { duration: 400 } });
+                      }}
+                      className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded text-xs cursor-pointer hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
                     >
                       <span>{refLabel.icon}</span>
                       <span>{refLabel.label}</span>
-                    </span>
+                      <span className="text-[10px]">→</span>
+                    </button>
                   );
                 })}
               </div>
             </div>
           )}
+
+          {/* AI回答 - 完整显示，占据剩余空间，带边框容器 */}
+          <div className="px-6 pt-3 pb-4 flex-1 flex items-start">
+            <div className="w-full border-2 border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-900">
+              {isLoading ? (
+                <div className="flex items-center gap-2 text-gray-500">
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10" strokeDasharray="60" strokeDashoffset="30"></circle>
+                  </svg>
+                  <span>生成中...</span>
+                </div>
+              ) : (
+                <div className="text-base text-gray-800 dark:text-gray-200 leading-relaxed markdown-content">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      // 标题样式
+                      h1: ({node, ...props}) => <h1 className="text-2xl font-bold mt-4 mb-2" {...props} />,
+                      h2: ({node, ...props}) => <h2 className="text-xl font-bold mt-3 mb-2" {...props} />,
+                      h3: ({node, ...props}) => <h3 className="text-lg font-bold mt-2 mb-1" {...props} />,
+                      // 段落样式
+                      p: ({node, ...props}) => <p className="mb-2" {...props} />,
+                      // 代码块样式
+                      code: ({node, ...props}: any) =>
+                        props.inline ? (
+                          <code className="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-sm font-mono" {...props} />
+                        ) : (
+                          <code className="block bg-gray-100 dark:bg-gray-700 p-3 rounded my-2 overflow-x-auto text-sm font-mono" {...props} />
+                        ),
+                      // 链接样式
+                      a: ({node, ...props}) => <a className="text-blue-600 dark:text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer" {...props} />,
+                      // 列表样式
+                      ul: ({node, ...props}) => <ul className="list-disc list-inside mb-2 space-y-1" {...props} />,
+                      ol: ({node, ...props}) => <ol className="list-decimal list-inside mb-2 space-y-1" {...props} />,
+                      li: ({node, ...props}) => <li className="ml-2" {...props} />,
+                      // 引用块样式
+                      blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-gray-300 dark:border-gray-600 pl-4 italic my-2" {...props} />,
+                      // 表格样式
+                      table: ({node, ...props}) => <table className="border-collapse border border-gray-300 dark:border-gray-600 my-2" {...props} />,
+                      th: ({node, ...props}) => <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 bg-gray-100 dark:bg-gray-700 font-semibold" {...props} />,
+                      td: ({node, ...props}) => <td className="border border-gray-300 dark:border-gray-600 px-3 py-2" {...props} />,
+                      // 强调样式
+                      strong: ({node, ...props}) => <strong className="font-bold" {...props} />,
+                      em: ({node, ...props}) => <em className="italic" {...props} />,
+                    }}
+                  >
+                    {aiResponse || "等待AI回复..."}
+                  </ReactMarkdown>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </HTMLContainer>
     );
