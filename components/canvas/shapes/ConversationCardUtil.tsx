@@ -159,7 +159,10 @@ export class ConversationCardUtil extends ShapeUtil<ConversationCardShape> {
                   return (
                     <button
                       key={ref.cardId}
-                      onClick={() => {
+                      onPointerDown={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        console.log('Reference button clicked, cardId:', ref.cardId);
                         editor.select(ref.cardId as any);
                         editor.zoomToSelection({ animation: { duration: 400 } });
                       }}
